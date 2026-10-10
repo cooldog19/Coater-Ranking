@@ -7,7 +7,7 @@
     "start": "node scripts/serve.cjs",
     "dev": "node scripts/serve.cjs",
     "build": "node scripts/build.cjs",
-    "test": "node --test tests/core.test.cjs tests/app.test.cjs"
+    "test": "node --test tests/core.test.cjs tests/app.test.cjs tests/features.test.cjs tests/sync.test.cjs tests/cloud.test.cjs"
   },
   "engines": {
     "node": ">=18"

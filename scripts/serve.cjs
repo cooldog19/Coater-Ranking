@@ -2,8 +2,8 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
-const types = {'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.svg':'image/svg+xml'};
-const files = new Set(['index.html', 'styles.css', 'core.js', 'app.js', 'favicon.svg']);
+const types = {'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.svg':'image/svg+xml','.md':'text/plain; charset=utf-8'};
+const files = new Set(['index.html','styles.css','features.css','core.js','app.js','favicon.svg','catalog-data.js','catalog.js','migration.js','recovery.js','firebase-config.js','sync-model.js','cloud.js','features.js','CATALOG_LICENSE.md']);
 const port = Number(process.env.PORT) || 4173;
 http.createServer((req,res) => {
   let requested;

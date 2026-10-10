@@ -57,7 +57,7 @@ test('bulk selection moves rides together; unranking and ranking from the inbox 
 });
 test('adding and editing personal rides preserves notes; clearing samples keeps personal additions',t=>{
   const a=app(t);a.click('#add-button');a.fill('field-name','My ride <script>alert(1)</script>');a.fill('field-park','My park');a.fill('field-notes','Back seat\nA great day.');a.fill('field-pov','https://youtu.be/test');a.submit('ride-form');
-  assert.equal(a.saved().rides.length,13);assert.equal(a.doc.querySelectorAll('script').length,2);
+  assert.equal(a.saved().rides.length,13);assert.equal(a.doc.querySelectorAll('script:not([src])').length,0);
   assert.equal(a.doc.getElementById('demo-banner').hidden,false);
   a.click('#clear-demo');a.click('#confirm-action');assert.deepEqual(a.names(),['My ride <script>alert(1)</script>']);assert.equal(a.saved().rides[0].notes,'Back seat\nA great day.');
   a.click('.ride-title');a.fill('field-notes','Updated note');a.submit('ride-form');assert.equal(a.saved().rides[0].notes,'Updated note');

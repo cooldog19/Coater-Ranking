@@ -17,6 +17,12 @@
     }
     return url.href;
   }
+  function rcdbURL(value) {
+    const text=clean(value,2000);if(!text)return '';
+    const url=/^[1-9]\d*$/.test(text)?new URL(`https://rcdb.com/${text}.htm`):new URL(text);
+    if(url.protocol!=='https:' || url.hostname!=='rcdb.com' || !/^\/[1-9]\d*\.htm$/.test(url.pathname) || url.username || url.password || url.search || url.hash)throw new Error('Use an RCDB ride page URL such as https://rcdb.com/123.htm.');
+    return url.href;
+  }
   function ride(raw, usedIds = new Set()) {
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('Each ride must be a record with a name.');
     const name = clean(raw.name, 160);
@@ -30,6 +36,9 @@
       type: TYPES.find(t => t.toLowerCase() === type.toLowerCase()) || 'Other',
       manufacturer: clean(raw.manufacturer, 100), notes: clean(raw.notes, 10000),
       pov: povURL(raw.pov), riddenOn: clean(raw.riddenOn, 10), ranked: raw.ranked !== false, demoRide: raw.demoRide === true,
+      rcdb: rcdbURL(raw.rcdb), catalogId:clean(raw.catalogId,100),
+      source: /^https?:\/\/(coasterpedia\.net|www\.wikidata\.org)\//.test(raw.source||'')?clean(raw.source,2000).replace(/^http:/,'https:'):'',
+      license: /^https?:\/\/coasterpedia\.net\//.test(raw.source||'')?'CC-BY-SA-4.0':/^https?:\/\/www\.wikidata\.org\//.test(raw.source||'')?'CC0-1.0':'',
     };
     if (result.riddenOn && (!/^\d{4}-\d{2}-\d{2}$/.test(result.riddenOn) || Number.isNaN(Date.parse(result.riddenOn)) || new Date(result.riddenOn).toISOString().slice(0,10) !== result.riddenOn)) throw new Error(`Invalid ride date for ${name}. Use a real date in YYYY-MM-DD format.`);
     return result;
@@ -38,7 +47,9 @@
     if (!raw || typeof raw !== 'object' || raw.version !== VERSION || !Array.isArray(raw.rides)) throw new Error('This is not a supported Tracklist backup (version 1).');
     if (raw.rides.length > LIMIT) throw new Error(`A collection can contain up to ${LIMIT.toLocaleString()} rides.`);
     const ids = new Set();
-    return {version: VERSION, demo: raw.demo === true, rides: canonical(raw.rides.map(r => ride(r, ids))), updatedAt: clean(raw.updatedAt, 40)};
+    const wishlist=Array.isArray(raw.wishlist)?raw.wishlist:[];
+    if(wishlist.length>LIMIT)throw new Error('Your trip list exceeds the collection limit.');
+    return {version: VERSION, demo: raw.demo === true, rides: canonical(raw.rides.map(r => ride(r, ids))),wishlist:wishlist.map(r=>ride({...r,ranked:false},ids)), updatedAt: clean(raw.updatedAt, 40)};
   }
   function move(rides, ids, destination) {
     const selected = new Set(ids);
@@ -86,6 +97,7 @@
     type: ['type', 'coastertype'], manufacturer: ['manufacturer', 'builder'],
     notes: ['notes', 'note', 'comments'], pov: ['pov', 'povurl', 'youtube', 'youtubelink', 'video'],
     riddenOn: ['riddenon', 'date', 'ridedate'], rank: ['rank', 'ranking', 'position'], ranked: ['ranked'],
+    rcdb:['rcdb','rcdburl','rcdbid','rcdbnumber'], catalogId:['catalogid'],source:['source','catalogsource'],
   };
   function importText(text, filename = '') {
     if (text.length > 15 * 1024 * 1024) throw new Error('Choose a backup smaller than 15 MB.');
@@ -117,7 +129,7 @@
     return normalize({version: VERSION, rides});
   }
   function exportCSV(rides) {
-    const fields = ['name', 'park', 'rank', 'type', 'country', 'manufacturer', 'notes', 'pov', 'riddenOn'];
+    const fields = ['name', 'park', 'rank', 'type', 'country', 'manufacturer', 'notes', 'pov', 'riddenOn','rcdb','catalogId','source','license'];
     const escape = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
     let rank = 0;
     return '\uFEFF' + [fields.join(','), ...rides.map(r => fields.map(f => escape(f === 'rank' ? (r.ranked ? ++rank : '') : r[f])).join(','))].join('\r\n');
@@ -125,9 +137,10 @@
   function merge(existing, incoming, preview = false) {
     const key = r => `${r.name.toLocaleLowerCase().trim()}\u0000${r.park.toLocaleLowerCase().trim()}`;
     const names = new Set(existing.map(key));
+    const rcdbs=new Set(existing.map(r=>r.rcdb).filter(Boolean));
     const ids = new Set(existing.map(r => r.id));
     const added = [];
-    for (const r of incoming) if (!names.has(key(r))) { names.add(key(r)); added.push(ride(r, ids)); }
+    for (const r of incoming) if (!names.has(key(r)) && !(r.rcdb&&rcdbs.has(r.rcdb))) { names.add(key(r));if(r.rcdb)rcdbs.add(r.rcdb);added.push(ride(r, ids)); }
     if (!preview && existing.length + added.length > LIMIT) throw new Error(`This import exceeds the ${LIMIT.toLocaleString()}-ride collection limit. Choose Replace instead, or import fewer rides.`);
     return {rides: canonical([...existing, ...added]), added: added.length, skipped: incoming.length - added.length};
   }
@@ -148,7 +161,7 @@
     ];
     return normalize({version: VERSION, demo: true, rides: samples.map((s, i) => ({name:s[0],park:s[1],country:s[2],type:s[3],manufacturer:s[4],notes:s[5],ranked:i < 10,demoRide:true}))});
   }
-  const api = {VERSION, LIMIT, TYPES, uid, clean, canonical, ride, normalize, move, unrank, parseCSV, importText, exportCSV, merge, sample, povURL};
+  const api = {VERSION, LIMIT, TYPES, uid, clean, canonical, ride, normalize, move, unrank, parseCSV, importText, exportCSV, merge, sample, povURL,rcdbURL};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Tracklist = api;
 })(globalThis);
