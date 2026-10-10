@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://www.gstatic.com/firebasejs/12.19.0/; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com; frame-src https://coasterlist.firebaseapp.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#182c2b">
   <meta name="description" content="A personal roller coaster ranking with easy reordering, notes, POV links, and portable backups.">
@@ -55,7 +57,7 @@
       </section>
       <section id="explore-panel" class="catalog-panel" aria-label="Explore roller coasters and parks" hidden></section>
       <section id="wishlist-panel" class="catalog-panel" aria-label="Your park wish list" hidden></section>
-      <footer class="page-footer"><span><button id="footer-backup">Data & backup</button></span></footer>
+      <footer class="page-footer"><span><button id="footer-backup">Data & backup</button> · <button id="footer-privacy">Privacy & saving</button></span></footer>
     </main>
   </div>
   <dialog id="modal" aria-labelledby="modal-title"><div id="modal-content"></div></dialog>

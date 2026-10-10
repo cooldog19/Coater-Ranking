@@ -28,7 +28,7 @@ async function run() {
     if (!name) continue;
     let record = records.get(id);
     if (!record) {
-      record = {id,name,park:label(value(row,'parkLabel')),parkId:value(row,'park').split('/').pop() || '',country:label(value(row,'countryLabel')),manufacturer:label(value(row,'makerLabel')),type:'Other',rcdb:`https://rcdb.com/${rcdb}.htm`,source:value(row,'item'),status:value(row,'closed')?'Defunct':'Unknown',kinds:[]};
+      record = {id,name,park:label(value(row,'parkLabel')),parkId:value(row,'park').split('/').pop() || '',country:label(value(row,'countryLabel')),manufacturer:label(value(row,'makerLabel')),type:'Other',rcdb:`https://rcdb.com/${rcdb}.htm`,source:value(row,'item').replace(/^http:/,'https:'),status:value(row,'closed')?'Defunct':'Unknown',kinds:[]};
       records.set(id,record);
     }
     const kind = label(value(row,'kindLabel'));

@@ -1,17 +1,19 @@
 # Enable Tracklist account sync
 
-Your provided public Web App configuration is already in `firebase-config.js` for project **coasterlist**. It is safe to commit this public client configuration. Never add a service-account key, admin credential, or private key to the site. Tracklist uses Firebase Authentication and Cloud Firestore; it does not initialize Analytics, Storage, or Cloud Functions.
+Public Web App configuration belongs in `firebase-config.js`. It identifies the backend and is visible to visitors by design. Never add a service-account key, admin credential, or private key to the site. Tracklist uses Firebase Authentication and Cloud Firestore; it does not initialize Analytics, Storage, or Cloud Functions. Read [SECURITY.md](SECURITY.md) before public deployment.
 
 ## Firebase Console
 
-1. Open [your Firebase project](https://console.firebase.google.com/project/coasterlist/overview).
+1. Open the app's project in the [Firebase Console](https://console.firebase.google.com/).
 2. Go to **Build → Authentication → Get started**. Under **Sign-in method**, enable **Email/Password** (password sign-in, not email-link sign-in).
-3. Under **Authentication → Settings → Authorized domains**, add `cooldog19.github.io`. Add `localhost` and `127.0.0.1` if you will test locally. Domains do not include `https://` or `/Coater-Ranking/`.
+3. Under **Authentication → Settings → Authorized domains**, add the website's production hostname. Domains do not include a protocol or path. Authorize local development domains only when needed. If changing the Web App's auth domain, update the allowed frame origin in `index.html`'s Content Security Policy too.
 4. Go to **Build → Firestore Database → Create database**, create the **(default)** database, choose a suitable location, and start in **production mode**. Use Standard edition for this app. Do not use open/test-mode rules.
-5. In the Firestore **Rules** tab, paste the complete contents of this repository’s `firestore.rules` and click **Publish**. The rule requires a signed-in user and restricts access to documents under that user’s own UID. It does not allow public collection reads.
+5. In the Firestore **Rules** tab, paste the complete current contents of `firestore.rules` and click **Publish**. Rules require the matching signed-in UID, limit writes to the app's exact paths and schemas, and protect recovery snapshots. Do not substitute a broad owner wildcard or public read/write rules.
 6. Keep the project on **Spark** if you want a no-cost plan with no billing account. Check the current [Firebase pricing](https://firebase.google.com/pricing) and quota dashboard. This app does not need the billable services associated with Blaze.
 
-The initial development check received `CONFIGURATION_NOT_FOUND`; after your console changes, the Authentication setup endpoint responded successfully (HTTP 200). The subsequent login denial was traced to published deny-all rules (allow read, write: if false). The owner confirmed publishing the UID-scoped replacement from firestore.rules. Reopen Account and choose Retry account save to reconnect a previously denied listener. Live signed-in access still needs verification with your account. A public config alone does not configure these services. Tracklist reports setup or security-rule errors and keeps the local collection available.
+7. Verify Web API key restrictions, password policy, email enumeration protection and quotas using the release checks in [SECURITY.md](SECURITY.md). The client configuration alone does not configure these protections.
+
+Test a signed-in save on the deployed website and load it on a second device. After changing rules, reopen **Account → Retry account save** to reconnect a previously denied listener. The app keeps local editing and backup available when account saving fails.
 
 ## Publish and use
 
@@ -33,6 +35,6 @@ No hosting migration is needed: GitHub Pages serves the app and Firebase provide
 
 ## Verification limits
 
-The sync coordinator is tested with a simulated cloud adapter for offline queues, revision conflicts, rapid edits, and account changes. The provided configuration and SDK URLs are checked separately. End-to-end authentication, production security rules, and real cross-device sync must be verified after these console settings are enabled; this workspace has no Firebase admin login and cannot publish your project’s rules.
+Automated tests cover offline queues, revision conflicts, rapid edits and account isolation. Emulator tests exercise the checked-in rules with allowed and denied requests. They cannot inspect the production console or verify that the same rules are published. Complete the live release checks in [SECURITY.md](SECURITY.md) before making the app public.
 
 References: [Web setup](https://firebase.google.com/docs/web/setup), [Email/password authentication](https://firebase.google.com/docs/auth/web/password-auth), [Firestore transactions](https://firebase.google.com/docs/firestore/manage-data/transactions), [Security rules](https://firebase.google.com/docs/firestore/security/get-started).

@@ -12,7 +12,7 @@
     if (!text) return '';
     let url;
     try { url = new URL(text); } catch { throw new Error('Use a complete YouTube URL, starting with https://.'); }
-    if (url.protocol !== 'https:' || !['youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be'].includes(url.hostname) || url.username || url.password) {
+    if (url.protocol !== 'https:' || !['youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be'].includes(url.hostname) || url.port || url.username || url.password) {
       throw new Error('POV links must be HTTPS YouTube or youtu.be links.');
     }
     return url.href;
@@ -20,7 +20,7 @@
   function rcdbURL(value) {
     const text=clean(value,2000);if(!text)return '';
     const url=/^[1-9]\d*$/.test(text)?new URL(`https://rcdb.com/${text}.htm`):new URL(text);
-    if(url.protocol!=='https:' || url.hostname!=='rcdb.com' || !/^\/[1-9]\d*\.htm$/.test(url.pathname) || url.username || url.password || url.search || url.hash)throw new Error('Use an RCDB ride page URL such as https://rcdb.com/123.htm.');
+    if(url.protocol!=='https:' || url.hostname!=='rcdb.com' || !/^\/[1-9]\d*\.htm$/.test(url.pathname) || url.port || url.username || url.password || url.search || url.hash)throw new Error('Use an RCDB ride page URL such as https://rcdb.com/123.htm.');
     return url.href;
   }
   function ride(raw, usedIds = new Set()) {
@@ -47,7 +47,8 @@
     if (!raw || typeof raw !== 'object' || raw.version !== VERSION || !Array.isArray(raw.rides)) throw new Error('This is not a supported Tracklist backup (version 1).');
     if (raw.rides.length > LIMIT) throw new Error(`A collection can contain up to ${LIMIT.toLocaleString()} rides.`);
     const ids = new Set();
-    const wishlist=Array.isArray(raw.wishlist)?raw.wishlist:[];
+    const wishlist=raw.wishlist===undefined?[]:raw.wishlist;
+    if(!Array.isArray(wishlist))throw new Error('Invalid ride wish list.');
     if(wishlist.length>LIMIT)throw new Error('Your wish list exceeds the collection limit.');
     return {version: VERSION, demo: raw.demo === true, rides: canonical(raw.rides.map(r => ride(r, ids))),wishlist:wishlist.map(r=>ride({...r,ranked:false},ids)),parkWishlist:parkList(raw.parkWishlist||[]), updatedAt: clean(raw.updatedAt, 40)};
   }
@@ -134,7 +135,8 @@
   }
   function exportCSV(rides) {
     const fields = ['name', 'park', 'rank', 'type', 'country', 'manufacturer', 'notes', 'pov', 'riddenOn','rcdb','catalogId','source','license'];
-    const escape = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
+    // Quoting alone does not prevent spreadsheet formula execution. JSON is the lossless backup.
+    const escape = value => {let text=String(value ?? '');if(/^[\s\u0000-\u001f]*[=+@-]/.test(text))text="'"+text;return `"${text.replace(/"/g, '""')}"`;};
     let rank = 0;
     return '\uFEFF' + [fields.join(','), ...rides.map(r => fields.map(f => escape(f === 'rank' ? (r.ranked ? ++rank : '') : r[f])).join(','))].join('\r\n');
   }

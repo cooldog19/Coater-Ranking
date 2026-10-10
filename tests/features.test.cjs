@@ -49,6 +49,17 @@ test('account copies stay separate and corrupt local copies are not overwritten'
   a.A.switchAccount('two');a.A.change({rides:[C.ride({name:'Account two'})]},'');a.A.switchAccount('one');assert.equal(a.state().rides[0].name,'Account one');
   a.w.localStorage.setItem(KEY+'.bad','{broken');a.A.switchAccount('bad');assert.equal(a.w.localStorage.getItem(KEY+'.bad'),'{broken');assert.equal(a.doc.getElementById('storage-warning').hidden,false);
 });
+test('direct account changes never seed another account with private credits or wishes',t=>{
+  const a=app(t);a.A.switchAccount('alice');a.A.change({rides:[C.ride({name:'Private credit'})],wishlist:[C.ride({name:'Private wish'})],parkWishlist:[{id:'private',name:'Private park'}]},'');
+  a.A.switchAccount('bob');assert.equal(a.A.getState().rides.length,0);assert.equal(a.A.getState().wishlist.length,0);assert.equal(a.A.getState().parkWishlist.length,0);
+  a.A.switchAccount('alice');assert.equal(a.A.getState().rides[0].name,'Private credit');
+});
+test('recovery metadata is escaped and account dialogs contain no operator setup instructions',t=>{
+  const a=app(t),payload='<img src=x onerror="window.compromised=true">';
+  a.w.localStorage.setItem('tracklist.recovery.v1',JSON.stringify([{owner:KEY,id:'safe',at:'2026-10-10T00:00:00.000Z',data:'{}',rides:payload,parks:payload,wishlist:payload}]));
+  a.click('#backup-button');a.click('#open-recovery');assert.equal(a.doc.querySelector('#modal-content img'),null);assert(a.doc.getElementById('modal-content').textContent.includes(payload));
+  a.click('#cloud-button');assert.doesNotMatch(a.doc.getElementById('modal-content').textContent,/Firebase|FIREBASE_SETUP|firebase-config|project|configuration/i);
+});
 test('recovery checkpoints restore a previous ranking including the wish list',t=>{
   const a=app(t);a.A.change({rides:[C.ride({name:'First'})],wishlist:[C.ride({name:'Planned',ranked:false})]},'');a.A.change({rides:[C.ride({name:'Second'})]},'');
   a.click('#backup-button');a.click('#open-recovery');const items=a.w.TracklistRecovery.list(a.w.localStorage,KEY),previous=items.find(s=>JSON.parse(s.data).rides[0]?.name==='First');assert(previous);

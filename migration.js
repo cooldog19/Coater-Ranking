@@ -6,8 +6,10 @@
     const header=text=>text.toLowerCase().replace(/[^a-z]/g,'');
     let records=[];
     if(/^\s*</.test(text)){
-      const doc=new Parser().parseFromString(text,'text/html');
-      for(const table of doc.querySelectorAll('table')){
+      // Template contents stay inert: imported images, frames and scripts cannot load or run.
+      const doc=new Parser().parseFromString('','text/html'),template=doc.createElement('template');
+      template.innerHTML=text;
+      for(const table of template.content.querySelectorAll('table')){
         const rows=[...table.querySelectorAll('tr')].map(row=>[...row.querySelectorAll('th,td')].filter(cell=>cell.closest('tr')===row));
         const first=rows.findIndex(cells=>cells.some(c=>/^(name|ride|coaster|rollercoaster|coastername|rollercoastername|ridename)$/.test(header(c.textContent))));
         if(first<0)continue;

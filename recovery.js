@@ -2,7 +2,7 @@
   'use strict';
   const KEY='tracklist.recovery.v1';
   function list(storage,owner='local'){
-    try{const all=JSON.parse(storage.getItem(KEY)||'[]');return Array.isArray(all)?all.filter(s=>s.owner===owner&&typeof s.data==='string'):[];}catch{return [];}
+    try{const all=JSON.parse(storage.getItem(KEY)||'[]');return Array.isArray(all)?all.filter(s=>s&&s.owner===owner&&typeof s.id==='string'&&typeof s.at==='string'&&Number.isFinite(Date.parse(s.at))&&typeof s.data==='string'&&s.data.length<=2*1024*1024).slice(0,10):[];}catch{return [];}
   }
   function save(storage,state,owner='local',force=false){
     if(state.demo)return;

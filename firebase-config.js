@@ -4,7 +4,5 @@ globalThis.TRACKLIST_FIREBASE_CONFIG = {
   apiKey: 'AIzaSyAVWVABN8t72NlTb98fxiPeoCExw7aTek8',
   authDomain: 'coasterlist.firebaseapp.com',
   projectId: 'coasterlist',
-  storageBucket: 'coasterlist.firebasestorage.app',
-  messagingSenderId: '555838620509',
   appId: '1:555838620509:web:002963c8cc13469cb81eb4'
 };

@@ -10,13 +10,26 @@ async function cloud(){
   },writeBatch:()=>{const refs=[];return {delete:ref=>refs.push(ref),commit:async()=>refs.forEach(ref=>docs.delete(ref))};}};
   const context={Tracklist:C,TracklistSyncModel:Model,TRACKLIST_FIREBASE_CONFIG:{apiKey:'test',projectId:'test',authDomain:'test',appId:'test'},mockSDK:sdk,navigator:{onLine:true},TextEncoder,console,setTimeout,clearTimeout};
   vm.createContext(context);let source=fs.readFileSync(require.resolve('../cloud.js'),'utf8');source=source.replace("import(base+'firebase-app.js')","Promise.resolve(mockSDK.app)").replace("import(base+'firebase-auth.js')","Promise.resolve(mockSDK.auth)").replace("import(base+'firebase-firestore.js')","Promise.resolve(mockSDK.store)");vm.runInContext(source,context);
-  context.TracklistCloud.init({getState:()=>({}),onAccount:()=>({})});await context.TracklistCloud.start();return {adapter:context.TracklistCloud.adapter,docs};
+  context.TracklistCloud.init({getState:()=>({}),onAccount:()=>({})});await context.TracklistCloud.start();return {adapter:context.TracklistCloud.adapter,api:context.TracklistCloud,docs,sdk};
 }
 test('Firebase adapter stores chunked snapshots atomically under the signed-in UID',async()=>{
   const {adapter,docs}=await cloud(),state=C.normalize({version:1,rides:Array.from({length:30},(_,i)=>({name:`Ride ${i}`,notes:'🎢'.repeat(4000)}))});
   const head=await adapter.write('alice',null,'first',state);assert(head.parts>1);assert([...docs.keys()].every(p=>p.startsWith('users/alice/')));assert.equal(JSON.stringify(await adapter.read('alice',head)),JSON.stringify(state));
   await assert.rejects(adapter.write('alice',null,'stale',state),e=>e.code==='tracklist/conflict');assert.equal(docs.get('users/alice/collections/main').revision,'first');assert.equal(docs.has('users/alice/snapshots/stale'),false);
   docs.delete('users/alice/snapshots/first/chunks/0');await assert.rejects(adapter.read('alice',head),/incomplete/);
+});
+test('cloud reads reject malformed revisions, oversized chunks and invalid JSON before applying data',async()=>{
+  const {adapter,docs}=await cloud();
+  for(const head of [{revision:'../../outside',parts:1},{revision:'safe',parts:61},{revision:{path:'other'},parts:1}])await assert.rejects(adapter.read('alice',head),/invalid/);
+  assert.equal(docs.size,0);
+  docs.set('users/alice/snapshots/safe/chunks/0',{text:'x'.repeat(120001)});await assert.rejects(adapter.read('alice',{revision:'safe',parts:1}),/incomplete/);
+  docs.set('users/alice/snapshots/safe/chunks/0',{text:'{malformed'});await assert.rejects(adapter.read('alice',{revision:'safe',parts:1}),/could not be read/);
+});
+test('authentication and database SDK errors never expose configuration or raw diagnostics',async()=>{
+  const {adapter,api,sdk}=await cloud(),raw=Object.assign(Error('INTERNAL CONFIGURATION DETAILS'),{code:'unknown'});
+  sdk.auth.signInWithEmailAndPassword=async()=>{throw raw;};await assert.rejects(api.signIn('test@example.test','test'),e=>!e.message.includes('CONFIGURATION'));
+  sdk.store.runTransaction=async()=>{throw raw;};await assert.rejects(adapter.write('alice',null,'safe',C.normalize({version:1,rides:[]})),e=>!e.message.includes('CONFIGURATION'));
+  sdk.store.getDocFromServer=async()=>{throw raw;};await assert.rejects(adapter.read('alice',{revision:'safe',parts:1}),e=>!e.message.includes('CONFIGURATION'));
 });
 test('cloud history retains ten revisions and cleans up only older snapshots after saving',async()=>{
   const {adapter,docs}=await cloud();let base=null;
