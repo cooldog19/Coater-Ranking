@@ -60,8 +60,8 @@ test('adding and editing personal rides preserves notes; clearing samples keeps 
   assert.equal(a.saved().rides.length,13);assert.equal(a.doc.querySelectorAll('script:not([src])').length,0);
   assert.equal(a.doc.getElementById('demo-banner').hidden,false);
   a.click('#clear-demo');a.click('#confirm-action');assert.deepEqual(a.names(),['My ride <script>alert(1)</script>']);assert.equal(a.saved().rides[0].notes,'Back seat\nA great day.');
-  a.click('.ride-title');a.fill('field-notes','Updated note');a.submit('ride-form');assert.equal(a.saved().rides[0].notes,'Updated note');
-  a.click('.ride-title');a.click('#delete-ride');a.click('#confirm-action');assert.equal(a.names().length,0);a.click('#undo-button');assert.equal(a.names().length,1);
+  a.click('.ride-row [data-action="edit"]');a.fill('field-notes','Updated note');a.submit('ride-form');assert.equal(a.saved().rides[0].notes,'Updated note');
+  a.click('.ride-row [data-action="edit"]');a.click('#delete-ride');a.click('#confirm-action');assert.equal(a.names().length,0);a.click('#undo-button');assert.equal(a.names().length,1);
 });
 test('bulk add, search, unranked inbox and empty search results are functional',t=>{
   const a=app(t,{saved:{version:1,rides:[]}});a.click('#add-button');a.click('#multiple-tab');a.fill('field-names','Alpha | First Park\nBeta | Second Park');a.submit('ride-form');
@@ -70,7 +70,7 @@ test('bulk add, search, unranked inbox and empty search results are functional',
   a.fill('search','no match');a.doc.getElementById('search').dispatchEvent(new a.w.Event('input'));assert.equal(a.doc.querySelector('.empty-state h2').textContent,'No rides found.');a.click('[data-action="clear-search"]');assert.equal(a.names().length,2);
 });
 test('invalid POV input displays an error without altering saved data',t=>{
-  const a=app(t);const before=a.saved();a.click('.ride-title');a.fill('field-pov','https://example.com/video');a.submit('ride-form');
+  const a=app(t);const before=a.saved();a.click('.ride-row [data-action="edit"]');a.fill('field-pov','https://example.com/video');a.submit('ride-form');
   assert.equal(a.doc.getElementById('form-error').hidden,false);assert.deepEqual(a.saved(),before);
 });
 test('import is reviewed first; replacement, merge, duplicate skipping and undo work',async t=>{
@@ -101,7 +101,7 @@ test('corrupt saved data is preserved until an explicit recovery or replacement'
   a.click('#reset-storage');a.click('#confirm-action');assert.equal(a.saved().rides.length,0);
 });
 test('other-tab changes refresh the collection and close a stale edit dialog',t=>{
-  const a=app(t);a.click('.ride-title');assert.equal(a.doc.getElementById('modal').open,true);
+  const a=app(t);a.click('.ride-row [data-action="edit"]');assert.equal(a.doc.getElementById('modal').open,true);
   const data=JSON.stringify({version:1,rides:[{name:'From another tab',ranked:true}]});
   a.w.dispatchEvent(new a.w.StorageEvent('storage',{key:KEY,newValue:data}));assert.deepEqual(a.names(),['From another tab']);assert.equal(a.doc.getElementById('modal').open,false);assert.equal(a.doc.getElementById('undo-button').disabled,true);
 });

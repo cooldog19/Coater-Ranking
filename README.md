@@ -16,27 +16,25 @@ Your public Firebase configuration for **coasterlist** is included. Follow [FIRE
 - Click a rank to jump to any position, top, or bottom.
 - Select several rides and move them together; shift-click selects a range. Relative order is preserved.
 - Focus a handle and use arrows, Home, or End. Ctrl/Cmd+Z undoes changes outside text inputs; / focuses search.
-- New logged credits go to **Unranked**. **All credits** includes every ridden ride. Click a ride to edit notes, first-ridden date, details, POV, or RCDB URL.
+- New logged credits go to **Unranked**. **All credits** includes every ridden ride. Use the single **Edit** action to change notes, first-ridden date, details, POV, or RCDB URL.
 - **Explore parks** searches the bundled catalog by park, ride, manufacturer, and country. Select a park to see its catalog rides. Filter current/status-unknown entries or include historic/planned rides.
-- **Plan ride** adds a coaster to your trip list without counting it as a credit. **Log credit** adds it instantly, fills metadata and available links, and removes it from the trip list. Matching RCDB IDs or names/parks prevent duplicate logging.
+- **Add to wish list** saves a park to visit. Open saved parks to see all catalog rides and your logged credits. You can also wish for individual rides. **Log credit** adds it instantly, fills metadata and available links, and removes that individual ride wish. Saved parks remain until you remove them. Matching RCDB IDs or names/parks prevent duplicate logging.
 - **Add a ride** includes catalog autofill and manual entry for missing rides. You can also paste multiple lines as `Ride | Park`.
 - The initial sample is clearly marked. **Start my own list** removes demonstration rides while retaining personal additions. New accounts copy personal additions and planned rides, excluding samples.
 
 The catalog currently contains **4,232 rides across 1,710 park groups** from public Coasterpedia articles and supplemental Wikidata entries. It is a dated community snapshot, with incomplete coverage and non-live statuses. Historic names help match imported credits. Source links, RCDB ride pages, and available direct YouTube POVs are included; search links are offered when a direct link is missing. No video or article media is copied. Attribution and reuse terms are in [CATALOG_LICENSE.md](CATALOG_LICENSE.md).
 
-## Move your Coaster-Count list
+## Import credits
 
-Open **Data & backup → Import Coaster-Count list**. On Coaster-Count, open your **Ridden coasters** page and either copy its ride table, save it as HTML, or use a CSV/TSV export if your account provides one. Paste the table or choose the saved file. **Review credits** matches names, former names, parks, and RCDB links where available. Review ambiguous matches, exclude unwanted rows, and import. Existing credits and personal notes are retained; new credits start unranked. Unmatched rides can be kept as entered.
-
-Supported copied lists include a Name/Coaster Name and Park header, or plain `Ride | Park` lines. Saved HTML needs a table with recognizable ride-name headers. The importer processes text locally and does not run imported scripts. No Coaster-Count password is requested.
-
-Coaster-Count's [published API](https://fr.coaster-count.com/cc_api_documentation.pdf) documents counts/statistics rather than a full detailed personal ride-list endpoint suitable for this static site. This app therefore provides file/table migration, not automatic account synchronization. A universal export button or every account's table layout has not been verified; review the parsed list before importing.
+Open **Data & backup → Import credits**. Paste a ride table, enter lines as `Ride | Park`, or choose a saved HTML, CSV, or TSV file. Review catalog matches before importing. Existing credits and notes are kept; new credits start unranked. Saved HTML requires a table with recognizable Name/Coaster Name and Park headers. Imported scripts are never executed.
 
 ## Saving, recovery, and sync
 
+The header has explicit **Log in** and **Log out** controls. **Create account** is a separate tab in the login dialog. Guest status means this device only; **Account saved** confirms a cloud revision. Offline, blocked, pending, and conflicting account saves have distinct status text.
+
 Every change saves to browser localStorage first. Private browsing, clearing site data, changing the site origin, or full storage can lose that copy. The app reports saving failures and keeps editing/export available. Unreadable saved data is preserved until an explicit replacement, with a recovery-file download.
 
-**Export JSON** is the complete independent backup: ranking, notes, metadata, and trip list. CSV contains credits only, including ranking and links. Import offers merge or replacement. Merge keeps existing order and notes, skips matching names/parks or RCDB IDs, and appends new ranked rides. Undo keeps 30 changes in this tab. Up to 10 local recovery checkpoints per collection are kept within a shared 2 MB budget; they disappear if browser data is cleared.
+**Export JSON** is the complete independent backup: ranking, notes, metadata, saved parks, and individual ride wishes. CSV contains credits only, including ranking and links. Import offers merge or replacement. Merge keeps existing order and notes, skips matching names/parks or RCDB IDs, and appends new ranked rides. Undo keeps 30 changes in this tab. Up to 10 local recovery checkpoints per collection are kept within a shared 2 MB budget; they disappear if browser data is cleared.
 
 With an account, a one-second debounce uploads edits to Firestore. Cloud saves retain 10 revisions and use transactions to prevent silent overwrites by other devices. A conflict offers **Use cloud**, **Merge both**, or **Use this device**, plus a backup download. Merge keeps the cloud ranking/notes and adds missing local credits; it cannot combine conflicting note edits or ranking orders. Offline changes stay local and retry when connected. Oversized sync payloads (over 6 MB) remain local and exportable. Guest and account collections have separate local copies; signing out returns to the guest collection.
 
@@ -50,7 +48,7 @@ Steel Vengeance,Cedar Point,1,Hybrid,United States,Rocky Mountain Construction,B
 New credit,Another park,,Steel,,,,,,
 ```
 
-Only name is required. Name/Ride/Coaster/Coaster Name/Roller Coaster; Park/Park Name/Location; Rank/Ranking/Position; Country; Type; Manufacturer/Builder; Notes/Comments; POV/YouTube/Video; Ridden On/Date; RCDB/RCDB ID are recognized. Dates use real YYYY-MM-DD dates. Positive integer ranks are ordered numerically; blank ranks are unranked. No rank column means all entries go to Unranked. POVs require HTTPS YouTube links; RCDB links require a ride page. Collections and trip lists each support up to 5,000 entries; file imports are limited to 15 MB. Catalog-derived exports preserve source and license metadata.
+Only name is required. Name/Ride/Coaster/Coaster Name/Roller Coaster; Park/Park Name/Location; Rank/Ranking/Position; Country; Type; Manufacturer/Builder; Notes/Comments; POV/YouTube/Video; Ridden On/Date; RCDB/RCDB ID are recognized. Dates use real YYYY-MM-DD dates. Positive integer ranks are ordered numerically; blank ranks are unranked. No rank column means all entries go to Unranked. POVs require HTTPS YouTube links; RCDB links require a ride page. Collections and wish lists each support up to 5,000 entries; file imports are limited to 15 MB. Catalog-derived exports preserve source and license metadata.
 
 ## Maintenance and verification
 
@@ -58,4 +56,4 @@ Visitors search the bundled catalog without provider requests. Refresh commands 
 
 The app uses plain HTML/CSS/JS and modern browser APIs (dialog, Pointer Events, localStorage, Blob). Firebase SDK 12.19.0 loads from Google's CDN for auth/sync; no analytics are initialized. Google Fonts has system-font fallbacks. Collection data goes only to the configured Firebase project when signed in. External video, RCDB, and source links open separately.
 
-Automated tests cover ranking, pointer/keyboard interactions, imports, catalog logging, trip lists, account isolation, recovery, offline queues, concurrent revisions, and stale async completions. Build, syntax, and HTTP asset checks supplement them. DOM tests use jsdom and do not verify CSS layout or real touch devices. The browser tool blocked local preview during development, so visual desktop/mobile verification remains unperformed. Authentication setup responds successfully; signed-in Firestore rules and real cross-device saving require verification with your account after console setup.
+Automated tests cover ranking, pointer/keyboard interactions, imports, catalog logging, wish lists, account isolation, recovery, offline queues, concurrent revisions, and stale async completions. Build, syntax, and HTTP asset checks supplement them. DOM tests use jsdom and do not verify CSS layout or real touch devices. The browser tool blocked local preview during development, so visual desktop/mobile verification remains unperformed. Authentication setup responds successfully; signed-in Firestore rules and real cross-device saving require verification with your account after console setup.

@@ -11,7 +11,7 @@
       const last=all.find(s=>s.owner===owner);
       if(!force&&last&&Date.now()-Date.parse(last.at)<10*60*1000)return;
       const data=JSON.stringify(state);if(last?.data===data)return;
-      all.unshift({id:Date.now()+'-'+Math.random().toString(36).slice(2),owner,at:new Date().toISOString(),rides:state.rides.length,wishlist:state.wishlist?.length||0,data});
+      all.unshift({id:Date.now()+'-'+Math.random().toString(36).slice(2),owner,at:new Date().toISOString(),rides:state.rides.length,wishlist:state.wishlist?.length||0,parks:state.parkWishlist?.length||0,data});
       // Keep up to 10 account-specific checkpoints within a 2 MB recovery budget.
       const counts=new Map();let size=0;
       all=all.filter(s=>{const n=(counts.get(s.owner)||0)+1;counts.set(s.owner,n);size+=s.data.length;return n<=10&&size<=2*1024*1024;});

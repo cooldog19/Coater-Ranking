@@ -2,21 +2,29 @@ const {test}=require('node:test'),assert=require('node:assert/strict'),fs=requir
 const {JSDOM}=require('jsdom'),C=require('../core.js'),K=require('../catalog.js'),M=require('../migration.js'),R=require('../recovery.js');
 const {parse:parseArticle}=require('../scripts/update-coasterpedia.cjs');
 const root=path.resolve(__dirname,'..'),KEY='tracklist.collection.v1';
-function app(t,{denyStorage=false}={}){
+function app(t,{denyStorage=false,mockAccount=false}={}){
   const dom=new JSDOM(fs.readFileSync(path.join(root,'index.html'),'utf8'),{url:'https://example.test/Coater-Ranking/',runScripts:'outside-only',pretendToBeVisual:true}),w=dom.window,errors=[];
   w.addEventListener('error',e=>errors.push(e.error));w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;};
   w.URL.createObjectURL=()=> 'blob:test';w.URL.revokeObjectURL=()=>{};w.HTMLAnchorElement.prototype.click=function(){};
   w.localStorage.setItem(KEY,JSON.stringify({version:1,rides:[]}));
   if(denyStorage)Object.defineProperty(w,'localStorage',{get(){throw new w.DOMException('Storage blocked','SecurityError');}});
-  for(const file of ['core.js','catalog-data.js','catalog.js','migration.js','recovery.js','sync-model.js','cloud.js','app.js','features.js'])w.eval(fs.readFileSync(path.join(root,file),'utf8'));
+  for(const file of ['core.js','catalog-data.js','catalog.js','migration.js','recovery.js','sync-model.js','cloud.js','app.js'])w.eval(fs.readFileSync(path.join(root,file),'utf8'));
+  let mock;
+  if(mockAccount){let callbacks,controller,head=null,cloudState=null;mock={denied:false};
+    const adapter={watch:(uid,onHead,onError)=>{queueMicrotask(()=>mock.denied?onError(Error('Account saving was blocked by database permissions.')):onHead(head));return()=>{};},write:async(uid,base,revision,state)=>{cloudState=state;return head={revision};},read:async()=>cloudState};
+    const notify=user=>{const meta=callbacks.onAccount(user);controller.detach();if(user)controller.attach(user.uid,meta);};
+    w.TracklistCloud={configured:()=>true,start:async()=>{},init:options=>{callbacks=options;controller=new w.TracklistSyncModel.Coordinator({...options,adapter,revision:()=>w.Tracklist.uid(),online:()=>true});return controller;},signIn:async(email,password,create)=>{mock.created=create;notify({uid:'alice',email});},signOut:async()=>notify(null),resetPassword:async()=>{},adapter};
+    mock.controller=()=>controller;mock.state=()=>cloudState;
+  }
+  w.eval(fs.readFileSync(path.join(root,'features.js'),'utf8'));
   t.after(()=>{w.close();assert.deepEqual(errors,[]);});
-  return {w,doc:w.document,A:w.TracklistApp,state:()=>JSON.parse(w.localStorage.getItem(w.TracklistApp.getStorageKey())),click:selector=>{const el=w.document.querySelector(selector);assert(el,selector);el.click();},input:(id,value)=>{const el=w.document.getElementById(id);assert(el,id);el.value=value;el.dispatchEvent(new w.Event('input',{bubbles:true}));},submit:id=>w.document.getElementById(id).dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}))};
+  return {w,doc:w.document,A:w.TracklistApp,mock,state:()=>JSON.parse(w.localStorage.getItem(w.TracklistApp.getStorageKey())),click:selector=>{const el=w.document.querySelector(selector);assert(el,selector);el.click();},input:(id,value)=>{const el=w.document.getElementById(id);assert(el,id);el.value=value;el.dispatchEvent(new w.Event('input',{bubbles:true}));},submit:id=>w.document.getElementById(id).dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}))};
 }
 test('catalog browse, plan, log, duplicate prevention and rank placement work together',t=>{
   const a=app(t);a.A.setView('explore');a.input('catalog-search','Cedar Point');a.click('[data-park-id]');
   const record=a.w.TRACKLIST_CATALOG.rides.find(r=>r.name==='Steel Vengeance'&&r.park==='Cedar Point'),card=`[data-catalog-id="${record.id}"]`;
   assert(a.doc.querySelector(card+' a[href="'+record.rcdb+'"]'));a.click(card+' [data-catalog-action="plan"]');assert.equal(a.state().rides.length,0);assert.equal(a.state().wishlist.length,1);
-  a.A.setView('wishlist');a.click('#wishlist-panel [data-catalog-action="log"]');assert.equal(a.state().wishlist.length,0);assert.equal(a.state().rides.length,1);assert.equal(a.state().rides[0].ranked,false);assert.equal(a.state().rides[0].catalogId,record.id);assert.match(a.state().rides[0].riddenOn,/^\d{4}-\d{2}-\d{2}$/);
+  a.A.setView('wishlist');a.click('#wishlist-panel '+card+' [data-catalog-action="log"]');assert.equal(a.state().wishlist.length,0);assert.equal(a.state().rides.length,1);assert.equal(a.state().rides[0].ranked,false);assert.equal(a.state().rides[0].catalogId,record.id);assert.match(a.state().rides[0].riddenOn,/^\d{4}-\d{2}-\d{2}$/);
   a.A.setView('explore');assert.equal(a.doc.querySelector(card+' [data-catalog-action="log"]'),null);a.click(card+' [data-catalog-action="rank"]');a.click('#move-first');assert.equal(a.state().rides[0].ranked,true);
 });
 test('manual catalog autofill saves metadata and personal notes',t=>{
@@ -41,7 +49,7 @@ test('account copies stay separate and corrupt local copies are not overwritten'
   a.A.switchAccount('two');a.A.change({rides:[C.ride({name:'Account two'})]},'');a.A.switchAccount('one');assert.equal(a.state().rides[0].name,'Account one');
   a.w.localStorage.setItem(KEY+'.bad','{broken');a.A.switchAccount('bad');assert.equal(a.w.localStorage.getItem(KEY+'.bad'),'{broken');assert.equal(a.doc.getElementById('storage-warning').hidden,false);
 });
-test('recovery checkpoints restore a previous ranking including the trip list',t=>{
+test('recovery checkpoints restore a previous ranking including the wish list',t=>{
   const a=app(t);a.A.change({rides:[C.ride({name:'First'})],wishlist:[C.ride({name:'Planned',ranked:false})]},'');a.A.change({rides:[C.ride({name:'Second'})]},'');
   a.click('#backup-button');a.click('#open-recovery');const items=a.w.TracklistRecovery.list(a.w.localStorage,KEY),previous=items.find(s=>JSON.parse(s.data).rides[0]?.name==='First');assert(previous);
   a.click(`[data-recovery-restore="${previous.id}"]`);a.click('#restore-checkpoint');assert.equal(a.state().rides[0].name,'First');assert.equal(a.state().wishlist[0].name,'Planned');a.click('#undo-button');assert.equal(a.state().rides[0].name,'Second');
@@ -55,7 +63,7 @@ test('catalog parser uses current names, current POV and top-level infobox field
   const record=parseArticle({pageid:1,title:'New ride',revisions:[{revid:2,slots:{main:{content:'{{Infobox roller coaster\n|name=Old ride\n|name2=New ride\n|name2To=Present\n|park=[[Park|My Park]]\n|manufacturer=One<br>Two\n|note={{Nested\n|park=Wrong Park\n}}\n|country=USA\n|video2=abcdefghijk\n|status=Operating\n|category1=Steel\n}}\n{{RCDB|link=https://rcdb.com/123.htm}}'}}}]});
   assert.equal(record.name,'New ride');assert.equal(record.park,'My Park');assert.deepEqual(record.aliases,['Old ride']);assert.equal(record.manufacturer,'One / Two');assert.equal(record.pov,'https://www.youtube.com/watch?v=abcdefghijk');assert.equal(record.rcdb,'https://rcdb.com/123.htm');
 });
-test('JSON keeps trip lists and new metadata; RCDB identity prevents duplicate imports',()=>{
+test('JSON keeps wish lists and new metadata; RCDB identity prevents duplicate imports',()=>{
   const state=C.normalize({version:1,rides:[{name:'New name',rcdb:'123',catalogId:'cp-1'}],wishlist:[{name:'Future',ranked:true}]});assert.equal(state.wishlist[0].ranked,false);assert.deepEqual(C.importText(JSON.stringify(state)),state);assert.equal(C.merge(state.rides,[C.ride({name:'Old name',rcdb:'123'})]).skipped,1);
   for(const url of ['javascript:alert(1)','https://rcdb.com.evil/1.htm','https://user@rcdb.com/1.htm'])assert.throws(()=>C.rcdbURL(url));
 });
@@ -63,4 +71,24 @@ test('recovery failures do not block primary saving; history is bounded per acco
   const store=new Map(),storage={getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)};
   for(let i=0;i<15;i++)R.save(storage,{rides:[{name:String(i)}]},'one',true);R.save(storage,{rides:[]},'two',true);assert.equal(R.list(storage,'one').length,10);assert.equal(R.list(storage,'two').length,1);
   assert.doesNotThrow(()=>R.save({getItem:()=>null,setItem:()=>{throw Error('quota');}},{rides:[]},'one',true));
+});
+
+const settle=()=>new Promise(r=>setImmediate(r));
+test('saved parks persist through logging and JSON, account copies, and undo',t=>{
+  const a=app(t);a.A.setView('explore');a.input('catalog-search','Cedar Point');a.click('[data-park-save]');assert.equal(a.state().parkWishlist.length,1);assert.equal(a.state().rides.length,0);
+  assert.equal(a.doc.getElementById('collection-stats').hidden,true);a.A.setView('wishlist');assert.equal(a.doc.getElementById('collection-stats').hidden,true);a.click('[data-wish-park]');
+  const record=a.w.TRACKLIST_CATALOG.rides.find(r=>r.name==='Steel Vengeance'&&r.park==='Cedar Point');a.click('#wishlist-panel [data-catalog-id="'+record.id+'"] [data-catalog-action="log"]');assert.equal(a.state().parkWishlist.length,1);assert.equal(a.state().rides.length,1);
+  assert.equal(C.importText(JSON.stringify(a.state())).parkWishlist[0].name,'Cedar Point');a.A.switchAccount('new');assert.equal(a.state().parkWishlist.length,1);a.A.setView('wishlist');a.click('[data-park-remove]');assert.equal(a.state().parkWishlist.length,0);a.click('#undo-button');assert.equal(a.state().parkWishlist.length,1);a.A.setView('ranked');assert.equal(a.doc.getElementById('collection-stats').hidden,false);
+});
+test('each ride has one edit action and its RCDB link has visible text',t=>{
+  const a=app(t);a.A.change({rides:[C.ride({name:'A ride',rcdb:'123'})]},'');const row=a.doc.querySelector('.ride-row');assert.equal(row.querySelectorAll('[data-action="edit"]').length,1);assert.equal(row.querySelector('[data-action="notes"]'),null);assert.equal(row.querySelector('.rcdb-link').textContent,'RCDB');assert.equal(a.doc.querySelector('a[href*="coaster-count"]'),null);
+});
+test('login, registration, account saving and logout have distinct controls',async t=>{
+  const a=app(t,{mockAccount:true});assert.equal(a.doc.getElementById('login-button').hidden,false);assert.equal(a.doc.getElementById('logout-button').hidden,true);a.click('#login-button');assert.equal(a.doc.getElementById('modal-title').textContent,'Log in');a.click('#auth-register-tab');assert.equal(a.doc.getElementById('auth-submit').textContent,'Create account');
+  a.input('cloud-email','alice@example.test');a.doc.querySelector('[name="password"]').value='test-password';a.submit('cloud-auth-form');await settle();assert.equal(a.mock.created,true);assert.equal(a.doc.getElementById('account-email').textContent,'alice@example.test');assert.equal(a.doc.getElementById('login-button').hidden,true);assert.equal(a.doc.getElementById('logout-button').hidden,false);assert.equal(a.doc.getElementById('cloud-top').textContent,'Account saved');assert.equal(a.doc.getElementById('save-status').hidden,true);
+  a.A.change({parkWishlist:[{id:'cedarpoint',name:'Cedar Point'}]},'');await a.mock.controller().flush();assert.equal(a.mock.state().parkWishlist.length,1);a.click('#logout-button');await settle();assert.equal(a.doc.getElementById('logout-button').hidden,true);assert.equal(a.doc.getElementById('cloud-top').textContent,'Guest');assert.equal(a.doc.getElementById('save-status').hidden,false);
+});
+test('denied account access preserves edits and retry reconnects after rules are fixed',async t=>{
+  const a=app(t,{mockAccount:true});a.mock.denied=true;a.A.change({rides:[C.ride({name:'Keep this credit'})]},'');a.click('#login-button');a.input('cloud-email','alice@example.test');a.doc.querySelector('[name="password"]').value='test-password';a.submit('cloud-auth-form');await settle();assert.equal(a.doc.getElementById('cloud-top').textContent,'Account save blocked');assert.equal(a.state().rides[0].name,'Keep this credit');
+  a.mock.denied=false;a.click('#cloud-top');a.click('#sync-now');await settle();assert.equal(a.doc.getElementById('cloud-top').textContent,'Account saved');assert.equal(a.mock.state().rides[0].name,'Keep this credit');assert.equal(a.doc.getElementById('sync-warning').hidden,true);
 });

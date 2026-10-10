@@ -7,7 +7,7 @@
   const snapshotDoc=(uid,revision)=>storeSDK.doc(db,'users',uid,'snapshots',revision);
   const chunkDoc=(uid,revision,index)=>storeSDK.doc(db,'users',uid,'snapshots',revision,'chunks',String(index));
   function friendly(error){
-    const codes={'auth/invalid-credential':'Email or password is incorrect.','auth/email-already-in-use':'This email already has an account. Try signing in.','auth/weak-password':'Use a stronger password with at least six characters.','auth/invalid-email':'Enter a valid email address.','auth/too-many-requests':'Too many attempts. Please try again later.','auth/operation-not-allowed':'Enable Email/Password sign-in in your Firebase project.','permission-denied':'Cloud access was denied. Check the Firestore security rules and project configuration.','unavailable':'The cloud is unavailable. Your local changes are kept. Try again when connected.'};
+    const codes={'auth/invalid-credential':'Email or password is incorrect.','auth/email-already-in-use':'This email already has an account. Try signing in.','auth/weak-password':'Use a stronger password with at least six characters.','auth/invalid-email':'Enter a valid email address.','auth/too-many-requests':'Too many attempts. Please try again later.','auth/operation-not-allowed':'Enable Email/Password sign-in in your Firebase project.','permission-denied':'Account saving was blocked by database permissions. Your edits are kept on this device.','unavailable':'The cloud is unavailable. Your local changes are kept. Try again when connected.'};
     return codes[error.code]||error.message||'Cloud connection failed. Your local data is kept.';
   }
   const adapter={
@@ -23,7 +23,7 @@
       const head=await storeSDK.runTransaction(db,async transaction=>{
         const current=await transaction.get(userDoc(uid));const previous=current.exists()?current.data():null;
         if((previous?.revision||null)!==expected){const error=new Error('Cloud revision changed.');error.code='tracklist/conflict';error.head=previous;throw error;}
-        const entry={revision,parts:parts.length,at,rides:state.rides.length,wishlist:state.wishlist.length};
+        const entry={revision,parts:parts.length,at,rides:state.rides.length,wishlist:state.wishlist.length,parks:state.parkWishlist.length};
         const history=[entry,...(previous?.history||[])];removed=history.slice(10);
         const next={revision,parts:parts.length,at,rides:state.rides.length,wishlist:state.wishlist.length,history:history.slice(0,10)};
         transaction.set(snapshotDoc(uid,revision),entry);

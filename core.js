@@ -48,8 +48,12 @@
     if (raw.rides.length > LIMIT) throw new Error(`A collection can contain up to ${LIMIT.toLocaleString()} rides.`);
     const ids = new Set();
     const wishlist=Array.isArray(raw.wishlist)?raw.wishlist:[];
-    if(wishlist.length>LIMIT)throw new Error('Your trip list exceeds the collection limit.');
-    return {version: VERSION, demo: raw.demo === true, rides: canonical(raw.rides.map(r => ride(r, ids))),wishlist:wishlist.map(r=>ride({...r,ranked:false},ids)), updatedAt: clean(raw.updatedAt, 40)};
+    if(wishlist.length>LIMIT)throw new Error('Your wish list exceeds the collection limit.');
+    return {version: VERSION, demo: raw.demo === true, rides: canonical(raw.rides.map(r => ride(r, ids))),wishlist:wishlist.map(r=>ride({...r,ranked:false},ids)),parkWishlist:parkList(raw.parkWishlist||[]), updatedAt: clean(raw.updatedAt, 40)};
+  }
+  function parkList(parks){
+    if(!Array.isArray(parks)||parks.length>LIMIT)throw new Error('Invalid park wish list.');
+    const seen=new Set();return parks.map(p=>{const name=clean(p?.name,160);if(!name)throw new Error('Every saved park needs a name.');return {id:clean(p.id,160)||name.toLowerCase(),name,country:clean(p.country,80)};}).filter(p=>{if(seen.has(p.id))return false;seen.add(p.id);return true;});
   }
   function move(rides, ids, destination) {
     const selected = new Set(ids);
@@ -161,7 +165,7 @@
     ];
     return normalize({version: VERSION, demo: true, rides: samples.map((s, i) => ({name:s[0],park:s[1],country:s[2],type:s[3],manufacturer:s[4],notes:s[5],ranked:i < 10,demoRide:true}))});
   }
-  const api = {VERSION, LIMIT, TYPES, uid, clean, canonical, ride, normalize, move, unrank, parseCSV, importText, exportCSV, merge, sample, povURL,rcdbURL};
+  const api = {VERSION, LIMIT, TYPES, uid, clean, canonical, ride, normalize, move, unrank, parseCSV, importText, exportCSV, merge, sample, povURL,rcdbURL,parkList};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Tracklist = api;
 })(globalThis);
