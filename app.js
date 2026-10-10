@@ -142,10 +142,13 @@
     return `<label class="${classes}"><span>${label}${optional}</span>${input}${options.help ? `<small>${options.help}</small>` : ''}</label>`;
   }
   function addModal(multiple = false) {
-    openModal(`${modalHeader('Add rides', 'Use the catalog or enter ride details.')}<div class="modal-body"><div class="modal-tabs"><button id="single-tab" class="${multiple ? '' : 'active'}">One ride</button><button id="multiple-tab" class="${multiple ? 'active' : ''}">Add several</button></div><form id="ride-form">${multiple ? `<div class="form-grid">${field('Ride names','names','',{textarea:true,full:true,required:true,placeholder:'Ride name | Park name\nAnother ride | Another park',help:'One ride per line. Add a park after a | separator if you like.'})}</div><label class="inline-check"><input name="ranked" type="checkbox"> Add to the end of my ranking</label>` : rideFields()}<p id="form-error" class="form-error" role="alert" hidden></p></form></div><div class="modal-actions"><button class="button quiet" data-close>Cancel</button><button class="button primary" type="submit" form="ride-form">${multiple ? 'Add rides' : 'Add ride'}</button></div>`);
+    openModal(`${modalHeader('Add rides', 'Use the catalog or enter ride details.')}<div class="modal-body"><div class="modal-tabs"><button id="single-tab" class="${multiple ? '' : 'active'}">One ride</button><button id="multiple-tab" class="${multiple ? 'active' : ''}">Add several</button></div><form id="ride-form">${multiple ? `<div class="form-grid">${field('Ride names','names','',{textarea:true,full:true,required:true,placeholder:'Ride name | Park name\nAnother ride | Another park',help:'One ride per line. Add a park after a | separator if you like.'})}</div><label class="inline-check"><input name="ranked" type="checkbox"> Add to the end of my ranking</label>` : rideFields()}<p id="form-error" class="form-error" role="alert" hidden></p></form></div><div class="modal-actions"><button class="button quiet" data-close>Cancel</button><button class="button primary" type="submit" form="ride-form">${multiple ? 'Add rides' : 'Add ride'}</button>${globalThis.TracklistQuiz ? '<button class="button" id="add-compare" type="submit" form="ride-form">Add & compare</button>' : ''}</div>`);
     $('single-tab').onclick = () => addModal(false); $('multiple-tab').onclick = () => addModal(true);
+    if (globalThis.TracklistQuiz) {
+      const help = document.createElement('p'); help.className='comparison-help'; help.textContent='Add & compare finds a place through the quiz. New rides stay unranked until you confirm a position.'; $('ride-form').append(help);
+    }
     $('ride-form').onsubmit = e => {
-      e.preventDefault(); const data = new FormData(e.target);
+      e.preventDefault(); const data = new FormData(e.target), compare = e.submitter?.id === 'add-compare';
       try {
         const used = new Set(state.rides.map(r => r.id)); let added;
         if (multiple) {
@@ -154,7 +157,8 @@
           if (lines.length + state.rides.length > C.LIMIT) throw new Error(`A collection can contain up to ${C.LIMIT.toLocaleString()} rides.`);
           added = lines.map(line => {const [name,...park] = line.split('|'); return C.ride({name,park:park.join('|'),ranked:data.has('ranked')},used);});
         } else added = [readRideForm(data, used)];
-        if (commit([...state.rides,...added], `${added.length === 1 ? added[0].name : `${added.length} rides`} added.`)) {view = added[0].ranked ? 'ranked' : 'unranked'; query=''; $('search').value=''; render(); closeModal();}
+        if (compare) added = added.map(r=>({...r,ranked:false}));
+        if (commit([...state.rides,...added], `${added.length === 1 ? added[0].name : `${added.length} rides`} added.`)) {view = added[0].ranked ? 'ranked' : 'unranked'; query=''; $('search').value=''; render(); closeModal(); if(compare)globalThis.TracklistQuiz.start({mode:'queue',ids:added.map(r=>r.id)});}
       } catch (error) { formError(error.message); }
     };
     document.dispatchEvent(new CustomEvent('tracklist:add-form',{detail:{multiple}}));
@@ -197,6 +201,10 @@
     $('rank-form').onsubmit = e => {e.preventDefault();apply(Number($('rank-input').value));};
     $('move-first').onclick = () => apply(1); $('move-last').onclick = () => apply(max);
     if (r.ranked) $('unrank-ride').onclick = () => {commit(C.unrank(state.rides,[id]),`${r.name} moved to Unranked.`);closeModal();};
+    if (globalThis.TracklistQuiz) {
+      const b = document.createElement('button'); b.className='button rank-compare'; b.id='rank-compare'; b.textContent=r.ranked ? 'Compare to rerank' : 'Rank by comparison';
+      $('rank-form').after(b); b.onclick=()=>globalThis.TracklistQuiz.start({mode:'single',ids:[id]});
+    }
     $('rank-input').focus(); $('rank-input').select();
   }
   function confirmModal(title, text, label, apply, cancel = closeModal) {

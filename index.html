@@ -11,6 +11,7 @@
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="./features.css">
+  <link rel="stylesheet" href="./comparison.css">
   <script src="./core.js" defer></script>
   <script src="./catalog-data.js" defer></script>
   <script src="./catalog.js" defer></script>
@@ -21,6 +22,8 @@
   <script src="./cloud.js" defer></script>
   <script src="./app.js" defer></script>
   <script src="./features.js" defer></script>
+  <script src="./comparison-model.js" defer></script>
+  <script src="./comparison.js" defer></script>
 </head>
 <body>
   <aside class="sidebar">
@@ -49,6 +52,7 @@
       <div id="demo-banner" class="demo-banner"><span>This is a sample collection. Drag a ride and make it yours.</span><button id="clear-demo">Start my own list <span aria-hidden="true">↗</span></button></div>
       <section class="ranking-panel" id="ranking-panel" aria-label="Ride list">
         <div class="list-toolbar"><div class="list-tabs" role="group" aria-label="Ride list view"><button class="active" data-view="ranked">Ranking <span id="tab-ranked"></span></button><button data-view="unranked">Unranked <span id="tab-unranked"></span></button><button data-view="all">All credits</button></div><label class="search"><span data-icon="search"></span><input type="search" id="search" placeholder="Find a ride or park…" aria-label="Search rides and parks"><kbd>/</kbd></label></div>
+        <div class="comparison-toolbar"><button class="button" id="compare-button">Rank by comparison</button></div>
         <div class="list-meta"><span id="list-summary"></span><span id="reorder-hint"><span data-icon="grip"></span>Drag to reorder · click a rank to jump</span></div>
         <div class="bulk-toolbar" id="bulk-toolbar" hidden><strong id="selection-count"></strong><label>Move to # <input id="bulk-rank" type="number" min="1" value="1" aria-label="Destination rank for selected rides"></label><button class="button small" id="bulk-move">Move rides</button><button class="button small quiet" id="bulk-unrank">Unrank</button><button class="icon-button" id="clear-selection" aria-label="Clear selection"><span data-icon="close"></span></button></div>
         <div class="table-header"><label class="check-wrap"><input type="checkbox" id="select-all" aria-label="Select all visible rides"></label><span class="rank-label">RANK</span><span>ROLLER COASTER / PARK</span><span class="type-heading">TYPE</span><span class="actions-heading">YOUR RIDE</span></div>

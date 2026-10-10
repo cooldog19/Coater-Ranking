@@ -14,6 +14,9 @@ Public Web App configuration is in `firebase-config.js`. Follow [FIREBASE_SETUP.
 
 - Drag a handle with mouse or touch to reorder. Edge dragging scrolls the page.
 - Click a rank to jump to any position, top, or bottom.
+- **Rank by comparison** quizzes unranked credits against your existing ranking, reranks one ride, or rebuilds all credits from scratch. Choose **Better**, **Worse**, **Much better**, or **Much worse**. Normal answers use binary insertion (at most nine comparisons for 500 reference rides); strong answers move the next question nearer the appropriate end without assuming untested comparisons. Back changes the previous answer, Skip preserves that ride, and each suggested position is reviewed before saving.
+- Click a ride’s rank and choose **Compare to rerank**, or use **Add & compare** when logging new rides. A full rebuild compares against rides already processed in that quiz. As you save, processed rides are reordered in their existing ranking slots; unprocessed rides stay in place. Previously unranked rides get new ranking slots. On completion, the processed rides are in their new relative order, with skipped rides retaining their slots and ranking status.
+- Pause or close the quiz to resume later. Pending answers are saved locally per account on this device; they are not synced or included in exported backups. Confirmed placements use the normal collection saving, cloud sync, recovery, and undo. Changes to the ranking or credit membership invalidate a paused quiz so it cannot apply outdated comparisons.
 - Select several rides and move them together; shift-click selects a range. Relative order is preserved.
 - Focus a handle and use arrows, Home, or End. Ctrl/Cmd+Z undoes changes outside text inputs; / focuses search.
 - New logged credits go to **Unranked**. **All credits** includes every ridden ride. Use the single **Edit** action to change notes, first-ridden date, details, POV, or RCDB URL.

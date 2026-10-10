@@ -35,7 +35,7 @@ if(process.argv.includes('--history')){
 }
 const dist=path.join(root,'dist');
 if(fs.existsSync(dist))for(const name of fs.readdirSync(dist)){
-  if(!/^(?:index\.html|(?:styles|features)\.css|(?:core|app|catalog-data|catalog|migration|recovery|firebase-config|sync-model|cloud|features)\.js|favicon\.svg|CATALOG_LICENSE\.md|\.nojekyll)$/.test(name))findings.push(`build: ${name} (unexpected deployed file)`);
+  if(!/^(?:index\.html|(?:styles|features|comparison)\.css|(?:core|app|catalog-data|catalog|migration|recovery|firebase-config|sync-model|cloud|features|comparison-model|comparison)\.js|favicon\.svg|CATALOG_LICENSE\.md|\.nojekyll)$/.test(name))findings.push(`build: ${name} (unexpected deployed file)`);
   else scan(name,fs.readFileSync(path.join(dist,name),'utf8'),'build');
 }
 if(findings.length){console.error(findings.join('\n'));process.exitCode=1;}
