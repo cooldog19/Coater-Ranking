@@ -22,14 +22,13 @@ function app(t,rides,{quiz,account,quota=false,features=false} = {}) {
   return {w,d,click,state:()=>JSON.parse(JSON.stringify(w.TracklistApp.getState())),session:()=>JSON.parse(w.localStorage.getItem(w.TracklistApp.getStorageKey()+'.comparison')),answer:value=>click(`[data-comparison-answer="${value}"]`),ranked:()=>JSON.parse(JSON.stringify(w.TracklistApp.getState().rides.filter(r=>r.ranked).map(r=>r.id)))};
 }
 function place(a,destination,{strong=false}={}) {
-  let steps=0;
-  while(!a.d.getElementById('comparison-save')) {
+  let steps=0;const index=a.session()?.index;
+  while(a.session() && a.session().index===index) {
     const s=a.session(), refs=s.mode==='full'?s.placed:a.state().rides.filter(r=>r.ranked&&r.id!==s.queue[s.index]).map(r=>r.id);
     const search=Q.search(refs.length,s.answers);
     a.answer(destination<=search.pivot?(strong?'much-better':'better'):(strong?'much-worse':'worse'));
     assert(++steps<65);
   }
-  a.click('#comparison-save');
   return steps;
 }
 test('binary insertion finds every position with logarithmic comparisons',()=>{
@@ -57,12 +56,13 @@ test('full rebuild orders processed slots and preserves unprocessed rides and me
   assert(next.every(r=>r.ranked));assert.equal(next.find(r=>r.id==='a').notes,'Keep notes');
   assert.deepEqual(rides.map(r=>r.id),['a','b','c','d']);assert.equal(rides[3].ranked,false);
 });
-test('queue ranks all unranked rides, supports Back and saves only confirmed positions',t=>{
+test('queue automatically saves final answers and advances without a confirmation',t=>{
   const a=app(t,[ride('a'),ride('b'),ride('c'),ride('x',false,{notes:'Remember this'}),ride('y',false)]);
   a.click('#compare-button');a.click('#comparison-unranked');
   const before=a.state();a.answer('much-better');assert.deepEqual(a.state(),before);
   a.click('#comparison-back');assert.equal(a.session().answers.length,0);
   place(a,0);assert.equal(a.ranked()[0],'x');assert.equal(a.session().index,1);
+  assert.equal(a.d.getElementById('comparison-save'),null);
   place(a,4);assert.deepEqual(a.ranked(),['x','a','b','c','y']);assert.equal(a.session(),null);
   assert.match(a.d.getElementById('modal-title').textContent,/complete/);
   assert.equal(a.state().rides.find(r=>r.id==='x').notes,'Remember this');
@@ -85,18 +85,18 @@ test('a ride reaches the top of a 500-ride ranking in a handful of UI comparison
 test('comprehensive ranking builds a new order, pauses safely, and includes formerly unranked credits',t=>{
   const a=app(t,[ride('a'),ride('b'),ride('c'),ride('d',false)]);
   a.click('#compare-button');a.click('#comparison-full');
-  assert(a.d.getElementById('comparison-save'));assert.deepEqual(a.ranked(),['a','b','c']);
-  place(a,0);place(a,0);assert.deepEqual(a.ranked(),['b','a','c']);
+  assert.equal(a.session().index,1);assert.equal(a.d.getElementById('comparison-save'),null);assert.deepEqual(a.ranked(),['a','b','c']);
+  place(a,0);assert.deepEqual(a.ranked(),['b','a','c']);
   a.click('#comparison-pause');
   const b=app(t,a.state().rides,{quiz:a.session()});b.click('#compare-button');b.click('#comparison-resume');
   place(b,1);place(b,0);
   assert.deepEqual(b.ranked(),['d','b','c','a']);assert.equal(b.state().rides.length,4);
 });
-test('skip leaves ranking status untouched, including an all-skipped rebuild',t=>{
-  const a=app(t,[ride('a'),ride('b'),ride('c',false)]),before=a.state();
-  a.w.TracklistQuiz.start({mode:'full'});a.click('#comparison-skip');a.click('#comparison-skip');a.click('#comparison-skip');
-  assert.deepEqual(a.state(),before);assert.match(a.d.getElementById('modal-content').textContent,/3 skipped/);
-  a.w.TracklistQuiz.start({mode:'full'});place(a,0);a.click('#comparison-skip');place(a,0);
+test('skip preserves a ride’s ranking status while an empty rebuild starts automatically',t=>{
+  const a=app(t,[ride('a'),ride('b'),ride('c',false)]);
+  a.w.TracklistQuiz.start({mode:'full'});a.click('#comparison-skip');a.click('#comparison-skip');
+  assert.deepEqual(a.ranked(),['a','b']);assert.equal(a.state().rides.find(r=>r.id==='c').ranked,false);assert.match(a.d.getElementById('modal-content').textContent,/2 skipped/);
+  a.w.TracklistQuiz.start({mode:'full'});a.click('#comparison-skip');place(a,0);
   assert.deepEqual(a.ranked(),['c','b','a']);
 });
 test('pending answers resume after reload; progress stays isolated per account',t=>{
@@ -108,7 +108,7 @@ test('pending answers resume after reload; progress stays isolated per account',
   a.w.TracklistApp.switchAccount(null);assert.deepEqual(a.session().answers,['worse']);
 });
 test('stale ranking changes and corrupt sessions cannot apply outdated comparisons',t=>{
-  const a=app(t,[ride('a'),ride('b'),ride('x',false)]);a.w.TracklistQuiz.start();a.answer('worse');
+  const a=app(t,[ride('a'),ride('b'),ride('x',false)]);a.w.TracklistQuiz.start();a.answer('better');
   a.w.TracklistApp.change({rides:C.move(a.state().rides,['b'],1)},'Moved');
   assert.equal(a.session(),null);assert.equal(a.d.getElementById('modal').open,false);
   const b=app(t,a.state().rides,{quiz:'{bad'});assert.equal(b.session(),null);b.click('#compare-button');b.click('#comparison-unranked');assert(b.session());
@@ -128,7 +128,7 @@ test('keyboard answers, escaped ride text, and failed quiz storage remain usable
   assert.match(a.d.getElementById('modal-content').textContent,/could not be saved/);
   const before=a.state();a.d.body.dispatchEvent(new a.w.KeyboardEvent('keydown',{key:'2',bubbles:true}));
   assert.deepEqual(a.state(),before);assert.match(a.d.getElementById('modal-content').textContent,/<img src=x/);assert.equal(a.d.querySelector('#comparison-session script'),null);
-  a.d.body.dispatchEvent(new a.w.KeyboardEvent('keydown',{key:'1',bubbles:true}));a.click('#comparison-save');assert.equal(a.ranked()[0],'x');
+  a.d.body.dispatchEvent(new a.w.KeyboardEvent('keydown',{key:'1',bubbles:true}));assert.equal(a.ranked()[0],'x');
 });
 test('starting another quiz requires an explicit choice and notes edits preserve paused answers',t=>{
   const a=app(t,[ride('a'),ride('b'),ride('x',false)]);a.w.TracklistQuiz.start();a.answer('better');
@@ -137,7 +137,7 @@ test('starting another quiz requires an explicit choice and notes edits preserve
   a.w.TracklistQuiz.start({mode:'full'});a.click('#comparison-restart');assert.equal(a.session().mode,'full');assert.equal(a.session().answers.length,0);
 });
 test('another-tab quiz changes close the active quiz instead of mixing answers',t=>{
-  const a=app(t,[ride('a'),ride('b'),ride('x',false)]);a.w.TracklistQuiz.start();a.answer('worse');
+  const a=app(t,[ride('a'),ride('b'),ride('x',false)]);a.w.TracklistQuiz.start();a.answer('better');
   const updated={...a.session(),answers:[]};a.w.localStorage.setItem(KEY+'.comparison',JSON.stringify(updated));
   a.w.dispatchEvent(new a.w.StorageEvent('storage',{key:KEY+'.comparison',newValue:JSON.stringify(updated)}));
   assert.equal(a.d.getElementById('modal').open,false);a.click('#compare-button');a.click('#comparison-resume');assert.deepEqual(a.session().answers,[]);
@@ -150,4 +150,41 @@ test('catalog credit logging works with comparison modules and opens its rank qu
   if(!log){const park=a.d.querySelector('[data-park-id]');assert(park);park.click();}
   const action=a.d.querySelector('[data-catalog-action="log"]');assert(action);action.click();
   const id=a.state().rides[0].id;a.w.TracklistApp.rankModal(id);a.click('#rank-compare');place(a,0);assert.equal(a.ranked().length,1);
+});
+test('buttons and focus stay in place across answers and the next ride',t=>{
+  const a=app(t,[ride('a'),ride('b'),ride('c'),ride('x',false),ride('y',false)]);
+  a.w.TracklistQuiz.start();const button=a.d.querySelector('[data-comparison-answer="better"]');
+  assert.equal(a.d.activeElement,button);assert.match(button.textContent,/↑ Rank higher/);
+  a.answer('better');assert.equal(a.d.querySelector('[data-comparison-answer="better"]'),button);
+  a.answer('better');assert.equal(a.session().index,1);assert.equal(a.d.querySelector('[data-comparison-answer="better"]'),button);assert.equal(a.d.activeElement,button);
+  assert.match(a.d.getElementById('comparison-notice').textContent,/x saved at #1/);
+  assert.equal(a.d.getElementById('comparison-target').querySelector('h3').textContent,'y');
+});
+test('Undo last ride restores its final comparison without losing later notes edits',t=>{
+  const a=app(t,[ride('a'),ride('b'),ride('c'),ride('x',false),ride('y',false)]);
+  a.w.TracklistQuiz.start();place(a,0);assert.equal(a.ranked()[0],'x');
+  a.w.TracklistApp.change({rides:a.state().rides.map(r=>({...r,notes:'New note'}))},'Notes updated');
+  assert.equal(a.d.getElementById('comparison-back').textContent,'Undo last ride');a.click('#comparison-back');
+  assert.equal(a.session().index,0);assert.equal(a.session().placed.length,0);assert.equal(a.state().rides.find(r=>r.id==='x').ranked,false);
+  assert(a.state().rides.every(r=>r.notes==='New note'));assert.equal(a.session().answers.length,1);
+  a.answer('worse');assert.deepEqual(a.ranked(),['a','x','b','c']);assert.equal(a.session().index,1);
+});
+test('a completed single rerank can be corrected immediately without a save screen',t=>{
+  const a=app(t,[ride('a'),ride('b'),ride('c')]);a.w.TracklistQuiz.start({mode:'single',ids:['c']});
+  place(a,0);assert.deepEqual(a.ranked(),['c','a','b']);a.click('#comparison-undo-final');
+  assert.deepEqual(a.ranked(),['a','b','c']);assert(a.d.getElementById('comparison-session'));a.answer('worse');
+  assert.deepEqual(a.ranked(),['a','c','b']);assert.equal(a.session(),null);
+});
+test('arrow shortcuts save and advance, stronger arrows work, held keys do not repeat',t=>{
+  const a=app(t,[ride('a'),ride('b'),ride('c'),ride('x',false),ride('y',false)]);a.w.TracklistQuiz.start();
+  const key=(value,extra={})=>a.d.activeElement.dispatchEvent(new a.w.KeyboardEvent('keydown',{key:value,bubbles:true,cancelable:true,...extra}));
+  key('ArrowUp',{repeat:true});assert.equal(a.session().answers.length,0);
+  key('ArrowUp',{shiftKey:true});assert.equal(a.session().answers[0],'much-better');key('ArrowUp');assert.equal(a.ranked()[0],'x');assert.equal(a.session().index,1);
+  key('ArrowDown',{shiftKey:true});while(a.session())key('ArrowDown');assert.equal(a.ranked().at(-1),'y');
+});
+test('an older paused result auto-saves only when the user resumes',t=>{
+  const rides=[ride('a'),ride('b'),ride('x',false)];
+  const quiz={version:1,mode:'queue',queue:['x'],index:0,placed:[],skipped:[],answers:['worse'],expected:JSON.stringify(rides.map(r=>[r.id,r.ranked]))};
+  const a=app(t,rides,{quiz});assert.equal(a.state().rides.find(r=>r.id==='x').ranked,false);
+  a.click('#compare-button');a.click('#comparison-resume');assert.deepEqual(a.ranked(),['a','b','x']);assert.equal(a.session(),null);
 });

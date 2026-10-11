@@ -4,7 +4,7 @@
   if (!A || !C || !Q) return;
   const $ = id => document.getElementById(id), esc = A.escape;
   const signature = () => JSON.stringify(A.getState().rides.map(r => [r.id,r.ranked]));
-  let owner = A.getStorageKey(), session = null, applying = false, durable = true;
+  let owner = A.getStorageKey(), session = null, applying = false, durable = true, lastPlacement = null, notice = '';
   const key = () => owner + '.comparison';
   const active = () => $('modal').open && !!$('comparison-session');
   function anchors(s = session) {
@@ -12,7 +12,7 @@
     return s.mode === 'full' ? s.placed.map(id => rides.find(r => r.id === id)) : rides.filter(r => r.ranked && r.id !== target);
   }
   function load() {
-    session = null; durable = true;
+    session = null; durable = true; lastPlacement = null; notice = '';
     try {
       const raw = localStorage.getItem(key());
       if (!raw) return;
@@ -39,7 +39,7 @@
     if (b) { b.textContent = session ? 'Resume comparison quiz' : 'Rank by comparison'; b.disabled = !A.getState().rides.length; }
   }
   function storageCopy() {
-    return durable ? 'Confirmed ranks use your usual saving settings. Paused quiz progress stays on this device; it isn’t included in backups.' : 'Quiz progress could not be saved on this device. Keep this tab open to resume. Confirmed ranks use your usual saving settings.';
+    return durable ? 'Ranks save automatically using your usual saving settings. Paused quiz progress stays on this device; it isn’t included in backups.' : 'Quiz progress could not be saved on this device. Keep this tab open to resume. Ranks use your usual saving settings.';
   }
   function start({mode = 'queue',ids} = {}) {
     if (!['single','queue','full'].includes(mode)) return;
@@ -47,11 +47,12 @@
     const queue = ids ? rides.filter(r => ids.includes(r.id)).map(r => r.id) : rides.filter(r => mode === 'full' || !r.ranked).map(r => r.id);
     if (!queue.length || (mode === 'single' && queue.length !== 1)) { A.toast('Choose a ride to compare.',false); return; }
     const begin = () => {
+      lastPlacement = null; notice = '';
       session = {version:1,mode,queue,index:0,placed:[],skipped:[],answers:[],expected:signature()};
       persist(); render();
     };
     if (session) {
-      A.openModal(`${A.modalHeader('Start a new quiz?')}<div class="modal-body comparison-body"><p>This replaces your paused quiz. Confirmed rankings are already saved.</p></div><div class="modal-actions"><button class="button quiet" id="comparison-keep">Keep paused quiz</button><button class="button primary" id="comparison-restart">Start new quiz</button></div>`);
+      A.openModal(`${A.modalHeader('Start a new quiz?')}<div class="modal-body comparison-body"><p>This replaces your paused quiz. Saved rankings are kept.</p></div><div class="modal-actions"><button class="button quiet" id="comparison-keep">Keep paused quiz</button><button class="button primary" id="comparison-restart">Start new quiz</button></div>`);
       $('comparison-keep').onclick = () => render(); $('comparison-restart').onclick = begin;
     } else begin();
   }
@@ -66,27 +67,61 @@
   function card(r, label, rank) {
     const pov = r.pov || `https://www.youtube.com/results?search_query=${encodeURIComponent(`${r.name} ${r.park} roller coaster POV`)}`;
     const rcdb = r.rcdb || `https://rcdb.com/qs.htm?qs=${encodeURIComponent(`${r.name} ${r.park}`)}`;
-    return `<article class="comparison-card"><span class="comparison-label">${label}</span>${A.art(r)}<h3>${esc(r.name)}</h3><p>${esc(r.park || 'Park not specified')}</p><small>${esc(rank)}${r.type ? ' · '+esc(r.type) : ''}</small>${r.notes ? `<details><summary>Personal notes</summary><p class="comparison-notes">${esc(r.notes)}</p></details>` : ''}<div class="comparison-links"><a href="${esc(pov)}" target="_blank" rel="noopener noreferrer">${r.pov ? 'Watch POV' : 'Find POV'} ↗</a><a href="${esc(rcdb)}" target="_blank" rel="noopener noreferrer">${r.rcdb ? 'RCDB' : 'Find RCDB'} ↗</a></div></article>`;
+    return `<article class="comparison-card"><span class="comparison-label">${label}</span><h3 title="${esc(r.name)}">${esc(r.name)}</h3><p title="${esc(r.park)}">${esc(r.park || 'Park not specified')}</p><small>${esc(rank)}</small><details><summary>Notes & links</summary>${r.notes ? `<p class="comparison-notes">${esc(r.notes)}</p>` : ''}<div class="comparison-links"><a href="${esc(pov)}" target="_blank" rel="noopener noreferrer">${r.pov ? 'Watch POV' : 'Find POV'} ↗</a><a href="${esc(rcdb)}" target="_blank" rel="noopener noreferrer">${r.rcdb ? 'RCDB' : 'Find RCDB'} ↗</a></div></details></article>`;
   }
   function render(focusId) {
     if (!session) { choices(); return; }
-    const previousScroll = active() && focusId ? $('modal').scrollTop : 0;
     const rides = A.getState().rides, target = rides.find(r => r.id === session.queue[session.index]);
     const refs = anchors(), search = Q.search(refs.length,session.answers), full = session.mode === 'full';
+    // No confirmation screen: the final answer saves immediately and advances the queue.
+    if (search.done) { save(target,refs,search.position); return; }
     const current = rides.filter(r => r.ranked).findIndex(r => r.id === target.id)+1;
     const title = full ? 'Rebuild your ranking' : session.mode === 'single' ? 'Find this ride’s place' : 'Rank your unranked credits';
-    const progress = `${session.index} of ${session.queue.length} reviewed · ${session.placed.length} saved${session.skipped.length ? ' · '+session.skipped.length+' skipped' : ''}`;
-    const result = search.position + 1;
-    A.openModal(`${A.modalHeader(title)}<div id="comparison-session" class="modal-body comparison-body"><div class="comparison-progress"><span>${progress}</span><progress value="${session.index}" max="${session.queue.length}" aria-label="Rides reviewed"></progress></div>${search.done ? `<div class="comparison-result" role="status"><span>${refs.length ? 'Your suggested place' : 'Your first ride'}</span><strong>#${result}</strong><p>${full ? `Among ${refs.length+1} compared rides in this rebuild. The remaining rides keep their places until you compare them.` : refs.length ? 'Save this position, or go back to change an answer.' : 'Save this ride to start your ranking.'}</p></div>${card(target,'Ride to place',current ? 'Currently #'+current : 'Unranked')}${refs.length ? `<p class="comparison-neighbors">${result > 1 ? 'Below '+esc(refs[result-2].name) : 'At the top'}${result <= refs.length ? ' · Above '+esc(refs[result-1].name) : ' · At the bottom'}</p>` : ''}` : `<p id="comparison-question" class="comparison-question" role="status">Do you prefer <strong>${esc(target.name)}</strong> to <strong>${esc(refs[search.pivot].name)}</strong>?</p><div class="comparison-pair">${card(target,'Ride to place',current ? 'Currently #'+current : 'Unranked')}${card(refs[search.pivot],'Compare against','#'+(search.pivot+1)+(full ? ' in this rebuild' : ''))}</div><div class="comparison-answers" role="group" aria-labelledby="comparison-question"><button class="button" data-comparison-answer="much-better"><strong>Much better</strong><span>Jump toward the top <kbd>1</kbd></span></button><button class="button primary" data-comparison-answer="better"><strong>Better</strong><span>I prefer this ride <kbd>2</kbd></span></button><button class="button" data-comparison-answer="worse"><strong>Worse</strong><span>I prefer the other ride <kbd>3</kbd></span></button><button class="button" data-comparison-answer="much-worse"><strong>Much worse</strong><span>Jump toward the bottom <kbd>4</kbd></span></button></div><p class="comparison-help">Possible position: #${search.low+1}–#${search.high+1} · ${session.answers.length} answers. Strong answers change the next question; every placement is still based on your comparisons.</p>`}<p class="privacy-note">${storageCopy()}</p></div><div class="modal-actions comparison-actions"><button class="button quiet" id="comparison-back" ${session.answers.length ? '' : 'disabled'}>Back</button><button class="button quiet" id="comparison-skip">Skip ride</button><button class="button quiet" id="comparison-pause">Pause</button>${search.done ? '<button class="button primary" id="comparison-save">Save position</button>' : ''}</div>`);
-    document.querySelectorAll('[data-comparison-answer]').forEach(b => b.onclick = () => answer(b.dataset.comparisonAnswer));
-    $('comparison-back').onclick = () => { session.answers.pop(); persist(); render('comparison-back'); };
-    $('comparison-skip').onclick = () => { session.skipped.push(target.id); advance(); };
-    $('comparison-pause').onclick = () => { A.closeModal(); A.toast('Quiz paused. Resume from your ranking.',false); };
-    if (search.done) $('comparison-save').onclick = () => save(target,refs,search.position);
-    const focus = focusId ? $(focusId) || document.querySelector(`[data-comparison-answer="${focusId}"]`) : search.done ? $('comparison-save') : document.querySelector('[data-comparison-answer="better"]');
-    $('modal').scrollTop = search.done ? 0 : previousScroll;
-    (focus && !focus.disabled ? focus : $('comparison-save') || document.querySelector('[data-comparison-answer="better"]') || $('comparison-pause')).focus({preventScroll:true});
-    $('announcement').textContent = search.done ? `${target.name}: suggested position ${result}${full ? ' in this rebuild' : ''}. Review and save.` : `Do you prefer ${target.name} to ${refs[search.pivot].name}? Possible position ${search.low+1} to ${search.high+1}.`;
+    const opening = !active();
+    if (opening) {
+      A.openModal(`${A.modalHeader(title)}
+        <div id="comparison-session" class="modal-body comparison-body comparison-fast">
+          <div class="comparison-progress"><span id="comparison-progress-text"></span><progress id="comparison-progress" aria-label="Rides reviewed"></progress></div>
+          <p id="comparison-notice" class="comparison-notice"></p>
+          <p id="comparison-question" class="comparison-question">Rank the highlighted ride above or below the reference?</p>
+          <div class="comparison-pair"><div id="comparison-target" class="comparison-target"></div><div id="comparison-reference"></div></div>
+          <div class="comparison-answers" role="group" aria-labelledby="comparison-question">
+            <button class="button comparison-up" data-comparison-answer="much-better"><strong>⇈ Much higher</strong><span>Much better <kbd>1</kbd></span></button>
+            <button class="button comparison-up" data-comparison-answer="better"><strong>↑ Rank higher</strong><span>I prefer the highlighted ride <kbd>2</kbd></span></button>
+            <button class="button comparison-down" data-comparison-answer="worse"><strong>↓ Rank lower</strong><span>I prefer the reference ride <kbd>3</kbd></span></button>
+            <button class="button comparison-down" data-comparison-answer="much-worse"><strong>⇊ Much lower</strong><span>Much worse <kbd>4</kbd></span></button>
+          </div>
+          <p id="comparison-range" class="comparison-help"></p>
+          <details class="comparison-info"><summary>Saving & shortcuts</summary><p id="comparison-storage" class="privacy-note"></p><p class="comparison-help">↑ / ↓ = higher / lower · Shift + ↑ / ↓ = much higher / lower. Keys 1–4 work too. Positions save automatically; Undo last ride lets you correct the latest placement.</p></details>
+          <p id="comparison-storage-warning" class="form-error" role="alert" hidden></p>
+        </div>
+        <div class="modal-actions comparison-actions"><button class="button quiet" id="comparison-back">Back</button><button class="button quiet" id="comparison-skip">Skip ride</button><button class="button quiet" id="comparison-pause">Pause</button></div>`);
+      // Keep these buttons in place across questions, so rapid taps and keyboard focus stay stable.
+      document.querySelectorAll('[data-comparison-answer]').forEach(b => b.onclick = () => answer(b.dataset.comparisonAnswer));
+      $('comparison-back').onclick = () => {
+        if (session.answers.length) { session.answers.pop(); persist(); render('comparison-back'); }
+        else undoPlacement();
+      };
+      $('comparison-skip').onclick = () => { lastPlacement = null; session.skipped.push(session.queue[session.index]); notice = 'Ride skipped. Its ranking is unchanged.'; advance(); };
+      $('comparison-pause').onclick = () => { A.closeModal(); A.toast('Quiz paused. Resume from your ranking.',false); };
+    }
+    $('comparison-progress-text').textContent = `Ride ${session.index+1} of ${session.queue.length} · ${session.placed.length} ranked${session.skipped.length ? ' · '+session.skipped.length+' skipped' : ''}`;
+    $('comparison-progress').max = session.queue.length; $('comparison-progress').value = session.index;
+    $('comparison-notice').textContent = notice || 'Positions save automatically. Keep answering to move to the next ride.';
+    const updateCard = (id,r,label,rank) => {
+      const el = $(id), content = card(r,label,rank);
+      if (el.comparisonContent !== content) { el.innerHTML = content; el.comparisonContent = content; }
+    };
+    updateCard('comparison-target',target,'Ranking now',current ? 'Currently #'+current : 'Unranked credit');
+    updateCard('comparison-reference',refs[search.pivot],'Reference ride','#'+(search.pivot+1)+(full ? ' in this rebuild' : ' in your ranking'));
+    $('comparison-range').textContent = `Possible rank: #${search.low+1}–#${search.high+1} · ${session.answers.length} answers`;
+    $('comparison-storage').textContent = storageCopy();
+    $('comparison-storage-warning').hidden = durable;
+    $('comparison-storage-warning').textContent = durable ? '' : storageCopy();
+    $('comparison-back').textContent = session.answers.length ? 'Back one answer' : 'Undo last ride';
+    $('comparison-back').disabled = !session.answers.length && !lastPlacement;
+    if (opening || (focusId === 'comparison-back' && $('comparison-back').disabled)) document.querySelector('[data-comparison-answer="better"]').focus({preventScroll:true});
+    $('announcement').textContent = `${notice ? notice+' ' : ''}Rank ${target.name} higher or lower than ${refs[search.pivot].name}? Possible rank ${search.low+1} to ${search.high+1}.`;
   }
   function answer(value) {
     if (!session || !Q.ANSWERS.includes(value) || Q.search(anchors().length,session.answers).done) return;
@@ -97,25 +132,53 @@
     placed.splice(position,0,target.id);
     const rides = A.getState().rides;
     const next = session.mode === 'full' ? Q.weave(rides,placed) : C.move(rides,[target.id],position+1);
+    const previous = refs.length ? {order:rides.map(({id,ranked})=>({id,ranked})),progress:JSON.parse(JSON.stringify({...session,answers:session.answers.slice(0,-1)}))} : null;
     applying = true;
     let ok;
     try { ok = A.change({rides:next},`${target.name} ranked${session.mode === 'full' ? ' in your rebuild' : ' #'+(position+1)}.`); }
     finally { applying = false; }
-    if (!ok) return;
+    if (!ok) {
+      if (session.answers.length) { session.answers.pop(); persist(); render(); A.toast('Position could not be saved. Try the answer again.',false); }
+      else {
+        A.openModal(`${A.modalHeader('Couldn’t save this ride')}<div class="modal-body comparison-body"><p>Your collection has not changed. Try again or pause the quiz.</p></div><div class="modal-actions"><button class="button quiet" data-close>Pause</button><button class="button primary" id="comparison-retry">Try again</button></div>`);
+        $('comparison-retry').onclick = () => render();
+      }
+      return;
+    }
     session.placed = session.mode === 'full' ? placed : [...session.placed,target.id];
-    session.expected = signature(); advance();
+    session.expected = signature();
+    lastPlacement = previous ? {...previous,expected:session.expected} : null;
+    const rank = A.getState().rides.filter(r=>r.ranked).findIndex(r=>r.id===target.id)+1;
+    notice = `${target.name} saved at #${rank}.`;
+    advance();
+  }
+  function undoPlacement() {
+    if (!lastPlacement || lastPlacement.expected !== signature()) return;
+    const previous = lastPlacement;
+    applying = true;
+    let ok;
+    const current = new Map(A.getState().rides.map(r=>[r.id,r]));
+    const rides = previous.order.map(({id,ranked})=>({...current.get(id),ranked}));
+    try { ok = A.change({rides},'Last quiz placement undone.'); }
+    finally { applying = false; }
+    if (!ok) return;
+    session = previous.progress; session.expected = signature(); lastPlacement = null;
+    notice = 'Last placement undone. Change your final answer.';
+    persist(); render();
   }
   function advance() {
     session.index++; session.answers = [];
     if (session.index < session.queue.length) { persist(); render(); return; }
     const {placed,skipped} = session;
     session = null; persist();
-    A.openModal(`${A.modalHeader('Quiz complete')}<div class="modal-body comparison-body"><div class="comparison-result"><strong>${placed.length}</strong><p>${placed.length === 1 ? 'ride' : 'rides'} ranked${skipped.length ? ' · '+skipped.length+' skipped' : ''}.</p></div><p>Your confirmed placements are saved with your collection. Skipped rides keep their previous ranking status.</p></div><div class="modal-actions"><button class="button primary" id="comparison-done">View ranking</button></div>`);
+    A.openModal(`${A.modalHeader('Quiz complete')}<div class="modal-body comparison-body"><div class="comparison-result"><strong>${placed.length}</strong><p>${placed.length === 1 ? 'ride' : 'rides'} ranked${skipped.length ? ' · '+skipped.length+' skipped' : ''}.</p></div><p>${esc(notice)}</p><p>Your placements are saved with your collection. Skipped rides keep their previous ranking status.</p></div><div class="modal-actions">${lastPlacement ? '<button class="button quiet" id="comparison-undo-final">Undo last ride</button>' : ''}<button class="button primary" id="comparison-done">View ranking</button></div>`);
+    if ($('comparison-undo-final')) $('comparison-undo-final').onclick = undoPlacement;
     $('comparison-done').onclick = () => { A.closeModal(); A.setView('ranked'); };
     $('comparison-done').focus();
   }
   document.addEventListener('tracklist:render',() => {
     if (applying) return;
+    if (lastPlacement && lastPlacement.expected !== signature()) lastPlacement = null;
     if (owner !== A.getStorageKey()) { owner = A.getStorageKey(); load(); }
     else if (session && session.expected !== signature()) {
       const wasActive = active(); session = null; persist();
@@ -129,9 +192,10 @@
     if (wasActive) { A.closeModal(); A.toast('Quiz progress changed in another tab. Resume to continue.',false); }
   });
   document.addEventListener('keydown',e => {
-    if (!active() || e.repeat || e.ctrlKey || e.metaKey || e.altKey || e.target.matches('input,textarea,select,[contenteditable]')) return;
+    if (!active() || e.repeat || e.ctrlKey || e.metaKey || e.altKey || e.target.matches('input,textarea,select,[contenteditable]') || e.target.closest('details')) return;
     const index = ['1','2','3','4'].indexOf(e.key);
-    if (index >= 0 && !$('comparison-save')) { e.preventDefault(); answer(Q.ANSWERS[index]); }
+    const value = index >= 0 ? Q.ANSWERS[index] : e.key === 'ArrowUp' ? (e.shiftKey ? 'much-better' : 'better') : e.key === 'ArrowDown' ? (e.shiftKey ? 'much-worse' : 'worse') : null;
+    if (value) { e.preventDefault(); answer(value); }
   });
   globalThis.TracklistQuiz = {start,choices};
   $('compare-button').onclick = choices;

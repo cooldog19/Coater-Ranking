@@ -3,30 +3,36 @@
 dialog:has(.comparison-body){width:760px;max-width:calc(100% - 24px)}
 .comparison-body{font-size:13px;line-height:1.6}
 .comparison-progress{display:flex;align-items:center;gap:18px;color:var(--muted);font-size:11px;margin-bottom:18px}
-.comparison-progress span{flex:1}.comparison-progress progress{width:110px;height:7px;accent-color:#416c44}
-.comparison-question{font-size:16px;text-align:center;margin:0 0 18px;overflow-wrap:anywhere}
+.comparison-progress span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.comparison-progress progress{width:110px;height:7px;accent-color:#416c44;flex-shrink:0}
+.comparison-question{font-size:14px;text-align:center;margin:0 0 14px;overflow-wrap:anywhere}
 .comparison-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
 .comparison-card{border:1px solid var(--line);border-radius:10px;padding:18px;background:#f5f7ef;overflow-wrap:anywhere}
 .comparison-label{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
-.comparison-card .ride-art{float:right;margin-left:10px;width:48px;height:54px}
-.comparison-card h3{font-size:18px;line-height:1.4;margin:0 0 6px;color:var(--ink)}
-.comparison-card>p{margin:0 0 8px}.comparison-card small{color:var(--muted)}
-.comparison-card details{clear:both;margin-top:14px;font-size:12px}.comparison-card summary{cursor:pointer;min-height:30px}
+.comparison-card h3{font-size:18px;line-height:1.4;height:2.8em;margin:0 0 6px;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.comparison-card>p{font-size:12px;line-height:1.5;height:1.5em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0 0 8px}.comparison-card small{color:var(--muted);display:block;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.comparison-card details{margin-top:8px;font-size:11px}.comparison-card summary{cursor:pointer;min-height:32px;display:flex;align-items:center;color:#356454}
+.comparison-target .comparison-card{border:2px solid #648b57;background:#edf3df;padding:17px}
+.comparison-target h3{color:#245348}.comparison-target .comparison-label{color:#416c44;font-weight:700}
+.comparison-notice{height:20px;line-height:20px;font-size:11px;color:#416c44;margin:0 0 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .comparison-notes{white-space:pre-wrap;max-height:150px;overflow:auto}
 .comparison-links{display:flex;gap:18px;clear:both;padding-top:16px;font-size:11px}.comparison-links a{padding:7px 0;color:#356454}
 .comparison-answers{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:20px}
-.comparison-answers .button{display:flex;flex-direction:column;align-items:center;padding:14px 6px;min-height:76px;text-align:center;white-space:normal}
+.comparison-answers .button{display:flex;flex-direction:column;align-items:center;padding:12px 6px;min-height:70px;text-align:center;white-space:normal}
 .comparison-answers strong{font-size:13px}.comparison-answers span{font-size:9px;font-weight:400;margin-top:4px}
 .comparison-answers kbd{font:inherit;opacity:.7;margin-left:4px}
+.comparison-answers .comparison-up{background:#edf3df;border-color:#bfd1a7;color:#245348}.comparison-answers [data-comparison-answer="better"]{background:#245348;border-color:#245348;color:#fff}
+.comparison-answers .comparison-down{background:#fcf2ec;border-color:#e6cdbd;color:#80432e}
+.comparison-answers .comparison-up:hover{filter:brightness(.96)}.comparison-answers .comparison-down:hover{background:#f6e5db}
+.comparison-info{margin-top:14px;font-size:10px;color:var(--muted)}.comparison-info summary{cursor:pointer;min-height:30px;display:flex;align-items:center}
+.comparison-fast .comparison-help{margin-top:10px}.comparison-fast{padding-top:18px;padding-bottom:12px}
 .comparison-help{font-size:11px;line-height:1.7;color:var(--muted);margin:16px 0 0}
 .comparison-result{text-align:center;margin-bottom:20px}.comparison-result>span{display:block;color:var(--muted);font-size:12px}.comparison-result>strong{display:block;font:750 44px Manrope,sans-serif;color:#356454}.comparison-result p{margin:6px 0;font-size:12px}
 .comparison-neighbors{font-size:12px;text-align:center;overflow-wrap:anywhere}
 .comparison-modes{display:flex;flex-direction:column;gap:14px}
 .comparison-mode{border:1px solid var(--line);border-radius:9px;background:#f5f7ef;text-align:left;padding:18px;line-height:1.6}.comparison-mode:hover{background:#edf3df}.comparison-mode strong{display:block;font-size:14px}.comparison-mode span{display:block;font-size:11px;color:var(--muted);margin-top:5px}
 .comparison-one{display:flex;align-items:flex-end;gap:12px;padding:4px 0}.comparison-one .field{flex:1;min-width:0}.comparison-one select{min-height:44px}
-.comparison-actions{flex-wrap:wrap;position:sticky;bottom:0;z-index:2}.comparison-actions .button{min-height:44px}.comparison-actions #comparison-save{margin-left:auto}
+.comparison-actions{flex-wrap:wrap;position:sticky;bottom:0;z-index:2}.comparison-actions .button{min-height:44px}.comparison-actions #comparison-pause{margin-left:auto}
 .rank-compare{margin-top:18px;width:100%;min-height:44px}
 #modal:has(#add-compare) .modal-actions{flex-wrap:wrap}
 #modal:has(#add-compare) .modal-actions .button{min-height:44px}
-@media(max-width:640px){.comparison-answers{position:sticky;bottom:69px;z-index:1;background:#fff;padding:8px 0;box-shadow:0 -8px 12px #fff}.comparison-card>p{font-size:12px}.comparison-card small{font-size:10px}}
-@media(max-width:640px){.comparison-toolbar{padding:0 14px 14px}.comparison-toolbar .button{width:100%;min-height:44px}.comparison-pair{grid-template-columns:1fr;gap:10px}.comparison-card{padding:14px}.comparison-card h3{font-size:16px}.comparison-label{margin-bottom:8px}.comparison-links{padding-top:6px}.comparison-answers{grid-template-columns:1fr 1fr;gap:8px}.comparison-answers .button{min-height:68px}.comparison-answers span{font-size:10px}.comparison-answers kbd{display:none}.comparison-question{font-size:14px}.comparison-progress{gap:10px}.comparison-progress progress{width:64px}.comparison-actions{gap:6px;padding:12px}.comparison-actions .button{font-size:11px;padding:9px 11px}.comparison-one{flex-direction:column;align-items:stretch}.comparison-one .button{min-height:44px}.comparison-body{padding:18px}.comparison-result>strong{font-size:36px}}
+@media(max-width:640px){.comparison-toolbar{padding:0 14px 14px}.comparison-toolbar .button{width:100%;min-height:44px}.comparison-pair{gap:8px}.comparison-card{padding:12px}.comparison-target .comparison-card{padding:11px}.comparison-card h3{font-size:15px}.comparison-card small{font-size:10px}.comparison-card summary{min-height:44px}.comparison-label{font-size:9px;letter-spacing:.6px;margin-bottom:8px}.comparison-links{padding-top:6px;flex-wrap:wrap;gap:6px}.comparison-answers{grid-template-columns:1fr 1fr;grid-template-areas:'better worse' 'much-better much-worse';gap:8px;position:sticky;bottom:69px;z-index:1;background:#fff;padding:8px 0;box-shadow:0 -8px 12px #fff}.comparison-answers [data-comparison-answer="better"]{grid-area:better}.comparison-answers [data-comparison-answer="worse"]{grid-area:worse}.comparison-answers [data-comparison-answer="much-better"]{grid-area:much-better}.comparison-answers [data-comparison-answer="much-worse"]{grid-area:much-worse}.comparison-answers .button{min-height:58px}.comparison-answers span{font-size:9px}.comparison-answers kbd{display:none}.comparison-question{font-size:12px}.comparison-progress{gap:10px;font-size:10px;margin-bottom:10px}.comparison-progress progress{width:64px}.comparison-actions{gap:6px;padding:12px}.comparison-actions .button{font-size:10px;padding:9px 8px}.comparison-one{flex-direction:column;align-items:stretch}.comparison-one .button{min-height:44px}.comparison-body{padding:16px}.comparison-fast{padding:12px}.comparison-notice{font-size:10px;margin-bottom:8px}.comparison-result>strong{font-size:36px}.comparison-info summary{min-height:44px}}
