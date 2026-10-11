@@ -12,7 +12,9 @@
   <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="./features.css">
   <link rel="stylesheet" href="./comparison.css">
+  <link rel="stylesheet" href="./social.css">
   <script src="./core.js" defer></script>
+  <script src="./social-model.js" defer></script>
   <script src="./catalog-data.js" defer></script>
   <script src="./catalog.js" defer></script>
   <script src="./migration.js" defer></script>
@@ -24,6 +26,7 @@
   <script src="./features.js" defer></script>
   <script src="./comparison-model.js" defer></script>
   <script src="./comparison.js" defer></script>
+  <script src="./social.js" defer></script>
 </head>
 <body>
   <aside class="sidebar">
@@ -36,6 +39,7 @@
       <button class="nav-item" data-view="all"><span data-icon="ticket"></span>All credits<span id="all-count" class="nav-count"></span></button>
       <button class="nav-item" data-view="explore"><span data-icon="search"></span>Explore parks</button>
       <button class="nav-item" data-view="wishlist"><span data-icon="star"></span>Wish list<span id="wishlist-count" class="nav-count"></span></button>
+      <button class="nav-item" data-view="social"><span data-icon="people"></span>Social</button>
     </nav>
     <div class="sidebar-divider"></div>
     <button class="nav-item" id="backup-button"><span data-icon="download"></span>Data & backup</button>
@@ -61,6 +65,7 @@
       </section>
       <section id="explore-panel" class="catalog-panel" aria-label="Explore roller coasters and parks" hidden></section>
       <section id="wishlist-panel" class="catalog-panel" aria-label="Your park wish list" hidden></section>
+      <section id="social-panel" class="catalog-panel" aria-label="Social profiles and friends" hidden></section>
       <footer class="page-footer"><span><button id="footer-backup">Data & backup</button> · <button id="footer-privacy">Privacy & saving</button></span></footer>
     </main>
   </div>

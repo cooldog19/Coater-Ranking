@@ -28,6 +28,16 @@ Public Web App configuration is in `firebase-config.js`. Follow [FIREBASE_SETUP.
 
 The catalog currently contains **4,232 rides across 1,710 park groups** from public Coasterpedia articles and supplemental Wikidata entries. It is a dated community snapshot, with incomplete coverage and non-live statuses. Historic names help match imported credits. Source links, RCDB ride pages, and available direct YouTube POVs are included; search links are offered when a direct link is missing. No video or article media is copied. Attribution and reuse terms are in [CATALOG_LICENSE.md](CATALOG_LICENSE.md).
 
+## Social profiles and friends
+
+New accounts choose a unique username during signup. Existing accounts can choose one from **Social** or **Account → Profile & username**. Usernames are case-insensitive, begin with a letter, contain 3–24 letters, numbers or underscores, and cannot be changed or transferred.
+
+In **Social**, enter an exact username (with or without `@`) to see a shared profile's credit count, ranked count, parks visited, favorite, full ranking, all credits and park/ride wishes. Profile lists support search and pagination. **Add friend** saves that account to your private friends list for quick access; it does not send a request or create a mutual friendship. Friends sync with your account, with a limit of 500.
+
+Sharing is an explicit checkbox at signup or username setup and can be disabled in **Profile settings**. Shared profiles are available only to signed-in users. Notes, first-ridden dates, email, friends and sample credits are never copied into shared profiles. A separate sanitized copy is published after successful private saves; pending changes and unresolved conflicts do not replace it. Hiding a profile stops new reads, but cannot retract information someone already viewed. The username remains reserved. Private saving continues independently if Social is unavailable.
+
+Publish the current **firestore.rules** before enabling this version on a live site; the earlier private-sync rules do not permit Social. Username, sharing settings and friends are account data stored separately from collection backups. They are not included in collection JSON/CSV exports or restored by collection imports. Shared profiles are derived from the latest acknowledged private collection rather than separate user-edited collections.
+
 ## Import credits
 
 Open **Data & backup → Import credits**. Paste a ride table, enter lines as `Ride | Park`, or choose a saved HTML, CSV, or TSV file. Review catalog matches before importing. Existing credits and notes are kept; new credits start unranked. Saved HTML requires a table with recognizable Name/Coaster Name and Park headers. Imported scripts are never executed.

@@ -122,19 +122,19 @@
     $('modal-content').querySelector('.modal-body').insertAdjacentHTML('afterbegin','<div class="backup-card"><h3>Import & recovery</h3><p>Bring over your ridden list, recover an earlier version, or connect an account for cross-device saves.</p><div class="backup-buttons"><button class="button" id="open-migration">Import credits</button><button class="button" id="open-recovery">Recovery checkpoints</button><button class="button" id="open-cloud">Account</button></div></div>');
     $('open-migration').onclick=migrationModal;$('open-recovery').onclick=recoveryModal;$('open-cloud').onclick=cloudModal;
   });
-  let account=null,cloudState=null,authMode='login';
+  let account=null,cloudState=null,authMode='login',deferredSocialSave=false;
   const coordinator=Cloud.init({
     getState:A.getState,
     onAccount:user=>{
       const uid=user?.uid||null;if(account?.uid===uid)return {base:coordinator.base,dirty:coordinator.dirty};
-      account=user;const local=A.switchAccount(uid);let meta={};try{meta=JSON.parse(localStorage.getItem(A.getStorageKey()+'.sync')||'{}');}catch{}
+      account=user;deferredSocialSave=false;const local=A.switchAccount(uid);let meta={};try{meta=JSON.parse(localStorage.getItem(A.getStorageKey()+'.sync')||'{}');}catch{}
       if(user&&!meta.base)meta.dirty=local.meaningful;
       if(user&&local.unreadable){meta={base:'unreadable-local-save',dirty:true};}
-      cloudState=coordinator;updateCloudStatus();return meta;
+      cloudState=coordinator;updateCloudStatus();document.dispatchEvent(new CustomEvent('tracklist:account',{detail:user}));return meta;
     },
     onMetadata:meta=>{try{localStorage.setItem(A.getStorageKey()+'.sync',JSON.stringify(meta));}catch{}},
     onRemote:A.applyRemote,
-    onStatus:state=>{cloudState=state;updateCloudStatus();},
+    onStatus:state=>{cloudState=state;updateCloudStatus();if(state.status==='synced'&&deferredSocialSave){deferredSocialSave=false;const uid=account?.uid;queueMicrotask(()=>{if(uid&&uid===account?.uid)coordinator.changed();});}},
     merge:(remote,local)=>{const rides=C.merge(remote.rides,local.rides).rides;return C.normalize({...remote,rides,parkWishlist:C.parkList([...remote.parkWishlist,...local.parkWishlist]),wishlist:C.merge(remote.wishlist,local.wishlist).rides.filter(w=>!rides.some(r=>K.same(r,w)))});},
   });
   function updateCloudStatus(){
@@ -164,11 +164,22 @@
       if(conflict){$('conflict-backup').onclick=()=>A.exportData();for(const [id,mode]of [['use-cloud','cloud'],['merge-cloud','merge'],['use-local','local']])$(id).onclick=async()=>{try{await coordinator.resolve(mode);if($('modal').open)cloudModal();}catch(error){cloudError(error.message);}};}
       else $('sync-now').onclick=async()=>{try{await coordinator.retry();if($('modal').open)cloudModal();}catch(error){cloudError(error.message);}};
       $('sign-out').onclick=logOut;
-      $('cloud-history').onclick=cloudHistory;return;
+      $('cloud-history').onclick=cloudHistory;document.dispatchEvent(new Event('tracklist:account-modal'));return;
     }
-    A.openModal(`${A.modalHeader(authMode==='register'?'Create account':'Log in', 'Save your collection to your account and use it on any device.')}<div class="modal-body"><p class="privacy-note">Guest collections are saved on this device. After login, your account collection is saved online, with a device copy for offline use. If both collections have credits, you can review and merge them.</p><div class="modal-tabs"><button id="auth-login-tab" class="${authMode==='login'?'active':''}">Log in</button><button id="auth-register-tab" class="${authMode==='register'?'active':''}">Create account</button></div><form id="cloud-auth-form" class="form-grid"><label class="field full"><span>Email</span><input name="email" id="cloud-email" type="email" autocomplete="email" required></label><label class="field full"><span>Password</span><input name="password" type="password" autocomplete="${authMode==='register'?'new-password':'current-password'}" minlength="6" required></label><p id="cloud-error" class="form-error field full" hidden role="alert"></p></form><button class="text-button" id="password-reset">Forgot password?</button><p class="privacy-note">Your account saves are private to your login. Keep downloaded backups for safekeeping.</p></div><div class="modal-actions"><button class="button quiet" data-close>Cancel</button><button class="button primary" id="auth-submit" type="submit" form="cloud-auth-form">${authMode==='register'?'Create account':'Log in'}</button></div>`);
+    A.openModal(`${A.modalHeader(authMode==='register'?'Create account':'Log in', 'Save your collection to your account and use it on any device.')}<div class="modal-body"><p class="privacy-note">Guest collections are saved on this device. After login, your account collection is saved online, with a device copy for offline use. If both collections have credits, you can review and merge them.</p><div class="modal-tabs"><button id="auth-login-tab" class="${authMode==='login'?'active':''}">Log in</button><button id="auth-register-tab" class="${authMode==='register'?'active':''}">Create account</button></div><form id="cloud-auth-form" class="form-grid"><label class="field full"><span>Email</span><input name="email" id="cloud-email" type="email" autocomplete="email" required></label><label class="field full"><span>Password</span><input name="password" type="password" autocomplete="${authMode==='register'?'new-password':'current-password'}" minlength="6" required></label><p id="cloud-error" class="form-error field full" hidden role="alert"></p></form><button class="text-button" id="password-reset">Forgot password?</button><p class="privacy-note">Your full account saves stay private. Sharing a Social profile makes your credits, ranking and wish lists visible to other signed-in users. Keep downloaded backups for safekeeping.</p></div><div class="modal-actions"><button class="button quiet" data-close>Cancel</button><button class="button primary" id="auth-submit" type="submit" form="cloud-auth-form">${authMode==='register'?'Create account':'Log in'}</button></div>`);
     $('auth-login-tab').onclick=()=>cloudModal('login');$('auth-register-tab').onclick=()=>cloudModal('register');
-    $('cloud-auth-form').onsubmit=async event=>{event.preventDefault();const form=event.target,button=$('auth-submit'),values=new FormData(form);button.disabled=true;try{await Cloud.signIn(values.get('email'),values.get('password'),authMode==='register');if(form.isConnected)cloudModal();}catch(error){if(form.isConnected)cloudError(error.message);}finally{if(button.isConnected)button.disabled=false;}};
+    if(authMode==='register'&&globalThis.TracklistSocial){
+      $('cloud-auth-form').insertAdjacentHTML('afterbegin','<label class="field full"><span>Username</span><input name="username" id="cloud-username" autocomplete="username" autocapitalize="none" spellcheck="false" minlength="3" maxlength="24" pattern="[A-Za-z][A-Za-z0-9_]{2,23}" required><small>Unique, case-insensitive, 3–24 letters, numbers or underscores. Your username cannot be changed.</small></label><label class="inline-check field full"><input name="share-profile" type="checkbox" checked> Share my credits, ranking and wish lists with other users</label><p class="privacy-note field full">Your notes, ride dates, email and friends list stay private.</p>');
+    }
+    $('cloud-auth-form').onsubmit=async event=>{
+      event.preventDefault();const form=event.target,button=$('auth-submit'),values=new FormData(form),create=authMode==='register';button.disabled=true;
+      try{
+        const username=create&&globalThis.TracklistSocial?TracklistSocialModel.username(values.get('username')):null;
+        await Cloud.signIn(values.get('email'),values.get('password'),create);
+        if(username){try{await TracklistSocial.register(username,values.has('share-profile'));A.closeModal();A.setView('social');}catch(error){TracklistSocial.setup(error.message);}}
+        else if(form.isConnected)cloudModal();
+      }catch(error){if(form.isConnected)cloudError(error.message);}finally{if(button.isConnected)button.disabled=false;}
+    };
     $('password-reset').onclick=async()=>{try{if(!$('cloud-email').reportValidity())return;await Cloud.resetPassword($('cloud-email').value);A.toast('If that account exists, a password-reset email will arrive.',false);}catch(error){cloudError(error.message);}};
   }
   function cloudError(message){if($('cloud-error')){$('cloud-error').hidden=false;$('cloud-error').textContent=message;}else A.toast(message,false);}
@@ -187,8 +198,9 @@
     }catch(error){if($('cloud-history-content'))$('cloud-history-content').textContent=error.message;}
   }
   $('cloud-button').onclick=$('cloud-top').onclick=()=>cloudModal();
-  $('footer-privacy').onclick=()=>A.openModal(`${A.modalHeader('Privacy & saving')}<div class="modal-body help-copy"><h3>Your collection</h3><p>Guest collections stay in this browser. When you log in, your email and password are sent to Google’s account service, and your collection is saved to your account. Other accounts cannot access your collection. Cloud saving keeps up to 10 recovery revisions.</p><h3>This device</h3><p>Your login persists until you log out. Separate browser copies of account collections and recovery checkpoints stay on this device after logout. On a shared computer, export anything you need, log out, and clear this site’s browser data.</p><h3>Backups & other services</h3><p>Downloaded backups contain your collection and notes. Keep them somewhere private. GitHub serves this website and Google supplies its fonts. Video, ride database and catalog source links open other websites with their own privacy practices. Tracklist does not enable analytics or advertising tracking.</p></div><div class="modal-actions"><button class="button quiet" data-close>Done</button></div>`);
+  $('footer-privacy').onclick=()=>A.openModal(`${A.modalHeader('Privacy & saving')}<div class="modal-body help-copy"><h3>Your collection</h3><p>Guest collections stay in this browser. When you log in, your email and password are sent to Google’s account service, and your collection is saved to your account. Your full collection and recovery copies are private to your account. Cloud saving keeps up to 10 recovery revisions.</p><h3>Your Social profile</h3><p>Choose a username to use Social. When sharing is on, other signed-in users can look up your username and view a separate copy of your credits, ranking and wish lists. Notes, ride dates, email and your saved friends list are excluded. Turn sharing off in Profile settings to stop new profile views. People may retain information they have already viewed. Your username stays reserved.</p><h3>This device</h3><p>Your login persists until you log out. Separate browser copies of account collections and recovery checkpoints stay on this device after logout. On a shared computer, export anything you need, log out, and clear this site’s browser data.</p><h3>Backups & other services</h3><p>Downloaded backups contain your collection and notes. Your username, profile setting and friends are saved separately to your account and are not included in collection backups. Keep backups somewhere private. GitHub serves this website and Google supplies its fonts. Video, ride database and catalog source links open other websites with their own privacy practices. Tracklist does not enable analytics or advertising tracking.</p></div><div class="modal-actions"><button class="button quiet" data-close>Done</button></div>`);
   $('login-button').onclick=()=>cloudModal('login');$('logout-button').onclick=logOut;
+  globalThis.TracklistAccount={requestSave:()=>{if(!account)return;if(['connecting','loading'].includes(coordinator.status))deferredSocialSave=true;else coordinator.changed();}};
   document.addEventListener('tracklist:render',updateCloudStatus);
   document.addEventListener('tracklist:change',()=>coordinator.changed());
   window.addEventListener('online',()=>coordinator.retry());

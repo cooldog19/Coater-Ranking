@@ -7,6 +7,7 @@ function token(uid){
   return [encode({alg:'none',typ:'JWT'}),encode({iss:`https://securetoken.google.com/${project}`,aud:project,sub:uid,user_id:uid,iat:now,exp:now+3600,auth_time:now,firebase:{sign_in_provider:'custom',identities:{}}}),''].join('.');
 }
 function value(data){
+  if(typeof data==='boolean')return {booleanValue:data};
   if(typeof data==='string')return {stringValue:data};
   if(typeof data==='number')return {integerValue:String(data)};
   if(Array.isArray(data))return {arrayValue:{values:data.map(value)}};
@@ -65,4 +66,43 @@ test('database rules enforce privacy, schema, immutable backups and valid atomic
   const unicode=C.normalize({version:1,rides:Array.from({length:30},(_,i)=>({name:`Ride ${i}`,notes:'🎢'.repeat(4000)}))}),chunks=Model.chunks(unicode),unicodeEntry={...entry('unicode',chunks.length),rides:30};
   const unicodeWrites=[update('users/bob/snapshots/unicode',unicodeEntry),...chunks.map((text,i)=>update(`users/bob/snapshots/unicode/chunks/${i}`,{text})),update('users/bob/collections/main',{...unicodeEntry,history:[unicodeEntry]})];
   const unicodeSave=await commit('bob',unicodeWrites);assert.equal(unicodeSave.status,200,JSON.stringify(unicodeSave.data));
+});
+test('social rules protect unique usernames, private friend lists and shared profile visibility',async()=>{
+  const S=require('../social-model.js'),a='social-alice',b='social-bob',handle='airtime_alice';
+  const settings={username:handle,visible:true,friendIds:[]};
+  const claim=[update(`usernames/${handle}`,{uid:a}),update(`users/${a}/social/account`,settings),update(`profiles/${a}`,S.hidden(handle))];
+  const first=await commit(a,claim);assert.equal(first.status,200,JSON.stringify(first.data));
+  assert.equal((await commit(b,[update(`usernames/${handle}`,{uid:b}),update(`users/${b}/social/account`,settings)])).status,403,'Username cannot be stolen.');
+  assert.equal((await commit(a,[update('usernames/extra_handle',{uid:a})])).status,403,'One account cannot reserve arbitrary extra names.');
+  assert.equal((await commit(a,[remove(`usernames/${handle}`)])).status,403);
+  assert.equal((await request(`/${`users/${a}/social/account`}`,b)).status,403);
+  for(const uid of [null,b])assert.equal((await commit(uid,[update(`users/${a}/social/account`,{...settings,friendIds:[b]})])).status,403);
+  for(const p of [`/usernames/${handle}`,`/profiles/${a}`]){assert.equal((await request(p,null)).status,403);assert.equal((await request(p,b)).status,200);}
+  for(const p of ['/usernames','/profiles',`/users/${a}/social`])assert.equal((await request(p,b)).status,403,'Directory listing is not allowed.');
+  assert.equal((await commit(a,revision(a,'private-one'))).status,200);
+  const publicData=S.project({version:1,rides:[{id:'ride',name:'Shared credit',ranked:true,park:'Park',notes:'PRIVATE NOTE',riddenOn:'2026-01-01'}]});
+  const shared={username:handle,visible:true,revision:'public-one',sourceRevision:'private-one',parts:1,at:'2026-10-10T00:00:00.000Z',...S.stats(publicData)};
+  const chunk=`profiles/${a}/versions/public-one/chunks/0`;
+  const publish=await commit(a,[update(chunk,{text:JSON.stringify(publicData)}),update(`profiles/${a}`,shared)]);assert.equal(publish.status,200,JSON.stringify(publish.data));
+  assert.equal((await request('/'+chunk,b)).status,200);assert.equal((await request('/'+chunk,null)).status,403);
+  assert.equal((await request(`/users/${a}/snapshots/private-one/chunks/0`,b)).status,403,'Shared profiles never grant private snapshot access.');
+  assert.equal((await commit(b,[update(`profiles/${a}`,shared)])).status,403);
+  assert.equal((await commit(a,[update(`profiles/${a}`,{...shared,email:'private@example.test'})])).status,403);
+  assert.equal((await commit(a,[update(`profiles/${a}`,{...shared,credits:5001})])).status,403);
+  assert.equal((await commit(a,[update(chunk,{text:'overwrite'})])).status,403);
+  assert.equal((await commit(a,[remove(chunk)])).status,403,'Active shared chunks cannot be deleted.');
+  assert.equal((await commit(a,[update(`profiles/${a}/versions/orphan/chunks/0`,{text:'{}'})])).status,403);
+  assert.equal((await commit(a,[update(`users/${a}/social/account`,{...settings,friendIds:[b]})])).status,200);
+  assert.equal((await commit(a,[update(`users/${a}/social/account`,{...settings,friendIds:Array(501).fill(b)})])).status,403);
+  assert.equal((await commit(a,[update(`users/${a}/social/account`,{...settings,username:'someone_else'})])).status,403);
+  assert.equal((await commit(a,[update(`users/${a}/social/account`,{...settings,visible:false})])).status,403,'Hiding cannot leave a shared profile readable.');
+  const hidden=await commit(a,[update(`users/${a}/social/account`,{...settings,visible:false}),update(`profiles/${a}`,S.hidden(handle))]);assert.equal(hidden.status,200,JSON.stringify(hidden.data));
+  assert.equal((await request('/'+chunk,b)).status,403);assert.equal((await request('/'+chunk,a)).status,403,'Inactive public copies are unreadable.');
+  assert.equal((await commit(a,[remove(chunk)])).status,200,'Inactive public copies can be cleaned up.');
+  assert.equal((await commit(a,revision(a,'private-two',[entry('private-one')]))).status,200);
+  assert.equal((await commit(a,[update(`users/${a}/social/account`,settings),update(`profiles/${a}`,{...shared,revision:'stale'})])).status,403,'Stale public publication is denied.');
+  const large={...shared,revision:'public-large',sourceRevision:'private-two',parts:60};
+  const writes=[update(`users/${a}/social/account`,settings),...Array.from({length:60},(_,i)=>update(`profiles/${a}/versions/public-large/chunks/${i}`,{text:'{}'})),update(`profiles/${a}`,large)];
+  const maximum=await commit(a,writes);assert.equal(maximum.status,200,JSON.stringify(maximum.data));
+  assert.equal((await request(`/${`profiles/${a}/versions/public-large/chunks/59`}`,b)).status,200);
 });

@@ -8,7 +8,7 @@ Public Web App configuration belongs in `firebase-config.js`. It identifies the 
 2. Go to **Build → Authentication → Get started**. Under **Sign-in method**, enable **Email/Password** (password sign-in, not email-link sign-in).
 3. Under **Authentication → Settings → Authorized domains**, add the website's production hostname. Domains do not include a protocol or path. Authorize local development domains only when needed. If changing the Web App's auth domain, update the allowed frame origin in `index.html`'s Content Security Policy too.
 4. Go to **Build → Firestore Database → Create database**, create the **(default)** database, choose a suitable location, and start in **production mode**. Use Standard edition for this app. Do not use open/test-mode rules.
-5. In the Firestore **Rules** tab, paste the complete current contents of `firestore.rules` and click **Publish**. Rules require the matching signed-in UID, limit writes to the app's exact paths and schemas, and protect recovery snapshots. Do not substitute a broad owner wildcard or public read/write rules.
+5. In the Firestore **Rules** tab, paste the complete current contents of `firestore.rules` and click **Publish**. Rules require the matching signed-in UID for private collections and friend settings, allow signed-in reads of explicitly shared profiles, limit writes to the app's exact paths and schemas, and protect recovery snapshots. Do not substitute a broad owner wildcard or public read/write rules. Updating the frontend does not publish rules: existing installations must also publish the new Social paths.
 6. Keep the project on **Spark** if you want a no-cost plan with no billing account. Check the current [Firebase pricing](https://firebase.google.com/pricing) and quota dashboard. This app does not need the billable services associated with Blaze.
 
 7. Verify Web API key restrictions, password policy, email enumeration protection and quotas using the release checks in [SECURITY.md](SECURITY.md). The client configuration alone does not configure these protections.
@@ -20,6 +20,8 @@ Test a signed-in save on the deployed website and load it on a second device. Af
 Push `main` to deploy through the existing GitHub Pages workflow. In Tracklist, open **Account** or the cloud status button, enter your email/password, and choose the **Create account** tab for your first sign-in. Sign in to that same account on your phone. Existing local credits are uploaded to a new empty account. If cloud data already exists, Tracklist offers a conflict review instead of silently replacing it.
 
 Guest and signed-in collections have separate local storage keys. Signing out returns to the guest collection. Each account’s local copy remains stored on that device. On shared computers, export and clear site data when finished; that also clears saved sign-in persistence. Password reset is available in the sign-in dialog.
+
+New accounts choose a username during signup. Existing accounts choose one in **Social** or **Account → Profile & username**. The explicit sharing checkbox publishes credits, ranking and wish lists to other signed-in users; private notes, ride dates, email and friends are excluded. **Profile settings** controls visibility. Username and friend settings are stored separately from collection backups. Test lookup, friends and hiding with two accounts after publishing the rules. If Social was opened before the new rules were published, use its **Try again** button or reload the page.
 
 ## Saving behavior
 
