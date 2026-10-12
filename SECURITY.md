@@ -20,6 +20,8 @@ The app uses HTTPS Google endpoints and the pinned Firebase SDK. Transactions co
 
 ## Browser boundary
 
+Statistics are derived in the browser. Shared profile statistics use only the sanitized public projection; first-ride dates and notes remain private. The map reads a bundled public land outline and park-coordinate snapshot, so no visitor credit/park list or device location is sent to a map/geocoding provider. Map source links are drawn from the reviewed public data bundle. The existing authenticated profile-read rules also protect shared statistics; no new Firestore paths are introduced.
+
 The document's Content Security Policy restricts executable scripts, connections, fonts and frames; inline scripts, objects, form submissions and base URL overrides are disallowed. Inline styles remain allowed for the existing dynamic layout. GitHub Pages cannot set custom response security headers, so this meta policy cannot provide `frame-ancestors` protection against framing. Add response headers on a host that supports them if that protection is required.
 
 User text and recovery metadata are escaped before rendering. Imported HTML is parsed in an inert template; imported scripts, frames and image resources are never attached to the page. POV and RCDB links use allowlisted HTTPS destinations. CSV fields that could execute as spreadsheet formulas receive an apostrophe prefix; JSON preserves original text exactly. Public account errors do not include raw SDK diagnostics or operator configuration instructions.

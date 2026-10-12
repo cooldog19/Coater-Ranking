@@ -23,6 +23,7 @@
     up:'<path d="m6 14 6-6 6 6"/>', down:'<path d="m6 10 6 6 6-6"/>',
     cloud:'<path d="M6 18h12a4 4 0 0 0 0-8 6 6 0 0 0-11-2 5 5 0 0 0-1 10z"/>',
     people:'<circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M17 5a3 3 0 0 1 0 6M21 21v-3a6 6 0 0 0-3-5"/>',
+    chart:'<path d="M4 3v18h17M8 16v-4M13 16V7M18 16v-7"/>',
   };
   const icon = name => `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">${paths[name] || paths.ticket}</svg>`;
   document.querySelectorAll('[data-icon]').forEach(el => el.innerHTML = icon(el.dataset.icon));
@@ -81,11 +82,13 @@
   }
   function render() {
     const ranked = state.rides.filter(r => r.ranked), unranked = state.rides.length - ranked.length, visible = visibleRides();
-    const titles = {ranked:'My ranking',unranked:'Unranked',all:'All credits',explore:'Explore parks',wishlist:'Wish list',social:'Social'};
-    const descriptions = {ranked:'Drag rides to reorder, or click a rank to move them.',unranked:'Place your new credits in the ranking.',all:'Your complete ridden coaster collection.',explore:'Search parks and rides, then log credits or save parks.',wishlist:'Save parks you want to visit and see their rides.',social:'Find your people. Compare your favorites.'};
-    $('ranking-panel').hidden=['explore','wishlist','social'].includes(view);$('explore-panel').hidden=view!=='explore';$('wishlist-panel').hidden=view!=='wishlist';if($('social-panel'))$('social-panel').hidden=view!=='social';
+    const titles = {ranked:'My ranking',unranked:'Unranked',all:'All credits',explore:'Explore parks',wishlist:'Wish list',social:'Social',statistics:'Statistics'};
+    const descriptions = {ranked:'Drag rides to reorder, or click a rank to move them.',unranked:'Place your new credits in the ranking.',all:'Your complete ridden coaster collection.',explore:'Search parks and rides, then log credits or save parks.',wishlist:'Save parks you want to visit and see their rides.',social:'Find your people. Compare your favorites.',statistics:'Find the patterns behind your favorites.'};
+    $('ranking-panel').hidden=['explore','wishlist','social','statistics'].includes(view);$('explore-panel').hidden=view!=='explore';$('wishlist-panel').hidden=view!=='wishlist';if($('social-panel'))$('social-panel').hidden=view!=='social';if($('statistics-panel'))$('statistics-panel').hidden=view!=='statistics';
+    if($('statistics-shortcut'))$('statistics-shortcut').hidden=!['ranked','unranked','all'].includes(view);
+    $('add-button').hidden=['social','statistics'].includes(view);
     $('wishlist-count').textContent=new Set([...state.parkWishlist.map(p=>p.id),...state.wishlist.map(r=>globalThis.TracklistCatalog?.parkKey(r)||r.park)]).size;
-    $('collection-stats').hidden=['explore','wishlist','social'].includes(view);
+    $('collection-stats').hidden=['explore','wishlist','social','statistics'].includes(view);
     $('page-title').innerHTML = `${titles[view]}<span>.</span>`;
     $('page-description').textContent = descriptions[view]; $('breadcrumb-view').textContent = titles[view];
     document.querySelectorAll('[data-view]').forEach(b => {b.classList.toggle('active', b.dataset.view === view); b.setAttribute('aria-pressed', String(b.dataset.view === view));});
@@ -94,7 +97,7 @@
     $('all-count').textContent = $('stat-total').textContent = state.rides.length;
     $('stat-parks').textContent = new Set(state.rides.map(r => r.park.trim().toLocaleLowerCase()).filter(Boolean)).size;
     $('stat-favorite').textContent = ranked[0]?.name || '—';
-    $('demo-banner').hidden = !state.demo || ['explore','wishlist','social'].includes(view);
+    $('demo-banner').hidden = !state.demo || ['explore','wishlist','social','statistics'].includes(view);
     $('reorder-hint').hidden = view === 'unranked';
     const plural = visible.length === 1 ? 'ride' : 'rides';
     $('list-summary').textContent = `${visible.length} ${plural}${query ? ' found' : view === 'ranked' ? ' in your ranking' : view === 'unranked' ? ' waiting to be ranked' : ' in your collection'}`;

@@ -7,7 +7,7 @@
     "start": "node scripts/serve.cjs",
     "dev": "node scripts/serve.cjs",
     "build": "node scripts/build.cjs",
-    "test": "node --test tests/core.test.cjs tests/app.test.cjs tests/features.test.cjs tests/comparison.test.cjs tests/social.test.cjs tests/sync.test.cjs tests/cloud.test.cjs tests/security.test.cjs",
+    "test": "node --test tests/core.test.cjs tests/app.test.cjs tests/features.test.cjs tests/comparison.test.cjs tests/social.test.cjs tests/statistics.test.cjs tests/sync.test.cjs tests/cloud.test.cjs tests/security.test.cjs",
     "security:check": "node scripts/security-check.cjs",
     "test:rules": "node --test tests/rules.test.cjs"
   },
