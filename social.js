@@ -7,7 +7,7 @@
   const current=(version,uid)=>version===epoch&&uid===account?.uid;
   const unavailable='Social features are unavailable right now. Check your connection and try again.';
   function render(){
-    $('add-button').hidden=A.getView()==='social';
+    $('add-button').hidden=['social','statistics'].includes(A.getView());
     if(A.getView()!=='social')return;
     const panel=$('social-panel');
     if(!account){panel.innerHTML='<div class="empty-state"><h2>Find friends on Tracklist.</h2><p>Log in or create an account to choose a username, share a profile and save friends.</p><button class="button primary" id="social-login">Log in</button></div>';$('social-login').onclick=()=>$('login-button').click();return;}
@@ -30,6 +30,7 @@
     if($('social-profile-search'))$('social-profile-search').oninput=event=>{rideQuery=event.target.value;page=0;const caret=event.target.selectionStart;render();const input=$('social-profile-search');input.focus({preventScroll:true});try{input.setSelectionRange(caret,caret);}catch{}};
     if($('social-add-friend'))$('social-add-friend').onclick=()=>friend(profile.head.uid,!settings.friendIds.includes(profile.head.uid));
     if($('social-profile-refresh'))$('social-profile-refresh').onclick=()=>openProfile(profile.head.uid);
+    if(profile?.data&&profileTab==='statistics'&&globalThis.TracklistStatistics)TracklistStatistics.bind($('social-profile'),profile.statistics);
     panel.querySelectorAll('[data-social-page]').forEach(b=>b.onclick=()=>{const [kind,next]=b.dataset.socialPage.split(':');if(kind==='friends'){friendPage=Number(next);refreshFriends();}else{page=Number(next);render();}});
     if(activeId&&$(activeId)){const input=$(activeId);input.focus({preventScroll:true});try{input.setSelectionRange(caret,caret);}catch{}}
   }
@@ -42,13 +43,14 @@
     const ranked=data.rides.filter(r=>r.ranked),rankMap=new Map(ranked.map((r,i)=>[r.id,i+1]));
     const source=profileTab==='ranking'?ranked:profileTab==='credits'?data.rides:[...data.parkWishlist.map(p=>({...p,kind:'park'})),...data.wishlist.map(r=>({...r,kind:'ride'}))];
     const q=rideQuery.trim().toLowerCase(),filtered=source.filter(r=>`${r.name} ${r.park||''} ${r.country||''}`.toLowerCase().includes(q));
-    const shown=filtered.slice(page*50,(page+1)*50);
+    const shown=filtered.slice(page*50,(page+1)*50),stats=globalThis.TracklistStatistics?(profile.statistics||=TracklistStatisticsModel.analyze({version:1,...data})):null;
     return `<section class="social-profile"><div class="social-profile-heading"><div><span class="social-muted">${own?'Your shared profile':'Shared profile'}</span><h2>@${e(head.username)}</h2></div><div>${actions}</div></div>
       <div class="social-stats"><div><strong>${head.credits}</strong><span>Credits</span></div><div><strong>${head.ranked}</strong><span>Ranked rides</span></div><div><strong>${head.parks}</strong><span>Parks visited</span></div><div><strong>${head.parkWishes+head.wishes}</strong><span>Wish list items</span></div></div>
       ${ranked.length?`<p class="social-favorite">Number one: <strong>${e(ranked[0].name)}</strong> · ${e(ranked[0].park)}</p>`:''}
-      <div class="social-profile-toolbar"><div class="modal-tabs" role="group" aria-label="Profile view"><button data-social-tab="ranking" class="${profileTab==='ranking'?'active':''}">Ranking</button><button data-social-tab="credits" class="${profileTab==='credits'?'active':''}">Credits</button><button data-social-tab="wishlist" class="${profileTab==='wishlist'?'active':''}">Wish list</button></div><label class="field"><span class="sr-only">Search this profile’s rides and parks</span><input id="social-profile-search" type="search" value="${e(rideQuery)}" placeholder="Find a ride or park…"></label></div>
-      <div class="social-rides">${shown.length?shown.map(r=>r.kind==='park'?`<article class="social-ride"><span class="social-rank">${A.icon('park')}</span><div><strong>${e(r.name)}</strong><small>Park wish · ${e(r.country||'Country not listed')}</small></div></article>`:rideHTML(r,profileTab==='wishlist'?null:rankMap.get(r.id))).join(''):`<p class="social-muted">${q?'No matches in this profile.':profileTab==='ranking'?'No ranked rides yet.':profileTab==='wishlist'?'No wish list items yet.':'No credits yet.'}</p>`}</div>
-      ${pagination('profile',page,filtered.length,50)}<p class="social-muted social-updated">Updated ${e(new Date(head.at).toLocaleString())} · <a href="./CATALOG_LICENSE.md" target="_blank" rel="noopener noreferrer">Catalog attribution</a></p></section>`;
+      ${stats&&profileTab!=='statistics'?TracklistStatistics.summary(stats):''}
+      <div class="social-profile-toolbar"><div class="modal-tabs" role="group" aria-label="Profile view"><button data-social-tab="ranking" class="${profileTab==='ranking'?'active':''}">Ranking</button><button data-social-tab="credits" class="${profileTab==='credits'?'active':''}">Credits</button><button data-social-tab="wishlist" class="${profileTab==='wishlist'?'active':''}">Wish list</button>${stats?`<button data-social-tab="statistics" class="${profileTab==='statistics'?'active':''}">Statistics</button>`:''}</div>${profileTab==='statistics'?'':`<label class="field"><span class="sr-only">Search this profile’s rides and parks</span><input id="social-profile-search" type="search" value="${e(rideQuery)}" placeholder="Find a ride or park…"></label>`}</div>
+      ${profileTab==='statistics'&&stats?TracklistStatistics.overview(stats,{shared:true,prefix:'shared'}):`<div class="social-rides">${shown.length?shown.map(r=>r.kind==='park'?`<article class="social-ride"><span class="social-rank">${A.icon('park')}</span><div><strong>${e(r.name)}</strong><small>Park wish · ${e(r.country||'Country not listed')}</small></div></article>`:rideHTML(r,profileTab==='wishlist'?null:rankMap.get(r.id))).join(''):`<p class="social-muted">${q?'No matches in this profile.':profileTab==='ranking'?'No ranked rides yet.':profileTab==='wishlist'?'No wish list items yet.':'No credits yet.'}</p>`}</div>${pagination('profile',page,filtered.length,50)}`}
+      <p class="social-muted social-updated">Updated ${e(new Date(head.at).toLocaleString())} · <a href="./CATALOG_LICENSE.md" target="_blank" rel="noopener noreferrer">Catalog attribution</a></p></section>`;
   }
   function rideHTML(r,rank){
     const pov=r.pov||`https://www.youtube.com/results?search_query=${encodeURIComponent(`${r.name} ${r.park} roller coaster POV`)}`;

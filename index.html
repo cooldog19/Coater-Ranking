@@ -13,10 +13,13 @@
   <link rel="stylesheet" href="./features.css">
   <link rel="stylesheet" href="./comparison.css">
   <link rel="stylesheet" href="./social.css">
+  <link rel="stylesheet" href="./statistics.css">
   <script src="./core.js" defer></script>
   <script src="./social-model.js" defer></script>
   <script src="./catalog-data.js" defer></script>
   <script src="./catalog.js" defer></script>
+  <script src="./park-map-data.js" defer></script>
+  <script src="./statistics-model.js" defer></script>
   <script src="./migration.js" defer></script>
   <script src="./recovery.js" defer></script>
   <script src="./firebase-config.js" defer></script>
@@ -27,6 +30,7 @@
   <script src="./comparison-model.js" defer></script>
   <script src="./comparison.js" defer></script>
   <script src="./social.js" defer></script>
+  <script src="./statistics.js" defer></script>
 </head>
 <body>
   <aside class="sidebar">
@@ -39,6 +43,7 @@
       <button class="nav-item" data-view="all"><span data-icon="ticket"></span>All credits<span id="all-count" class="nav-count"></span></button>
       <button class="nav-item" data-view="explore"><span data-icon="search"></span>Explore parks</button>
       <button class="nav-item" data-view="wishlist"><span data-icon="star"></span>Wish list<span id="wishlist-count" class="nav-count"></span></button>
+      <button class="nav-item" data-view="statistics"><span data-icon="chart"></span>Statistics</button>
       <button class="nav-item" data-view="social"><span data-icon="people"></span>Social</button>
     </nav>
     <div class="sidebar-divider"></div>
@@ -51,7 +56,7 @@
     <main>
       <div id="storage-warning" class="warning" hidden></div>
       <div id="sync-warning" class="warning" hidden></div>
-      <section class="page-heading"><div><h1 id="page-title">My ranking<span>.</span></h1><p id="page-description">Drag rides to reorder, or click a rank to move them.</p></div><button class="button primary" id="add-button"><span data-icon="plus"></span>Add a ride</button></section>
+      <section class="page-heading"><div><h1 id="page-title">My ranking<span>.</span></h1><p id="page-description">Drag rides to reorder, or click a rank to move them.</p></div><div class="heading-actions"><button class="button quiet" id="statistics-shortcut" data-view="statistics"><span data-icon="chart"></span>Statistics</button><button class="button primary" id="add-button"><span data-icon="plus"></span>Add a ride</button></div></section>
       <section id="collection-stats" class="stats" aria-label="Collection statistics"><div><span class="stat-icon" data-icon="ticket"></span><div><strong id="stat-total">0</strong><span>Total credits</span></div></div><div><span class="stat-icon" data-icon="ranking"></span><div><strong id="stat-ranked">0</strong><span>Ranked rides</span></div></div><div><span class="stat-icon" data-icon="park"></span><div><strong id="stat-parks">0</strong><span>Parks visited</span></div></div><div class="favorite-stat"><span class="stat-icon" data-icon="star"></span><div><strong id="stat-favorite">—</strong><span>Your number one</span></div></div></section>
       <div id="demo-banner" class="demo-banner"><span>This is a sample collection. Drag a ride and make it yours.</span><button id="clear-demo">Start my own list <span aria-hidden="true">↗</span></button></div>
       <section class="ranking-panel" id="ranking-panel" aria-label="Ride list">
@@ -66,6 +71,7 @@
       <section id="explore-panel" class="catalog-panel" aria-label="Explore roller coasters and parks" hidden></section>
       <section id="wishlist-panel" class="catalog-panel" aria-label="Your park wish list" hidden></section>
       <section id="social-panel" class="catalog-panel" aria-label="Social profiles and friends" hidden></section>
+      <section id="statistics-panel" aria-label="Your coaster statistics" hidden></section>
       <footer class="page-footer"><span><button id="footer-backup">Data & backup</button> · <button id="footer-privacy">Privacy & saving</button></span></footer>
     </main>
   </div>
