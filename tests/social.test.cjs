@@ -123,3 +123,14 @@ test('friends see preferences and Statistics from shared credits, with no privat
   a.click('[data-social-tab="statistics"]');assert(a.d.querySelector('#social-profile .statistics-overview'));assert(a.d.querySelector('#social-profile [data-map-pin]'));assert(!a.d.getElementById('social-profile').textContent.includes('PRIVATE SECRET'));assert.equal(a.d.querySelector('#social-profile .stats-years'),null);
   a.click('[data-social-tab="ranking"]');assert.match(a.d.querySelector('#social-profile .social-rides').textContent,/Favorite coaster/);
 });
+
+test('profile headers and shared Statistics count park aliases consistently without changing stored metadata',async t=>{
+  const a=app(t);await settle();
+  a.w.TRACKLIST_PARK_MAP={parks:[{id:'one',name:'One Park',aliases:['Former Park'],country:'United States',lat:40,lon:-80,source:'https://www.wikidata.org/wiki/Q1'}]};
+  const saved=profile('bob','loop_bob',{version:2,rides:[{name:'One',park:'One Park',ranked:true},{name:'Two',park:'Former Park',ranked:true}]});
+  assert.equal(saved.head.parks,2);a.profiles.set('bob',saved);
+  a.click('[data-view="social"]');a.input('social-search','loop_bob');a.submit('social-search-form');await settle();
+  assert.equal(a.d.querySelector('.social-stats > div:nth-child(3) strong').textContent,'1');
+  a.click('[data-social-tab="statistics"]');assert.equal(a.d.querySelector('#social-profile .stats-totals > div:nth-child(3) strong').textContent,'1');
+  assert.equal(saved.head.parks,2);
+});
