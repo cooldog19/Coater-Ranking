@@ -29,6 +29,9 @@
   document.querySelectorAll('[data-icon]').forEach(el => el.innerHTML = icon(el.dataset.icon));
   let STORAGE = 'tracklist.collection.v1';const EXPORT_KEY = 'tracklist.lastExport';
   let state, view = 'ranked', query = '', selection = new Set(), history = [], toastTimer, lastSelected = null;
+  let creditsView = 'name';
+  const alphabetical = new Intl.Collator(undefined,{sensitivity:'base',numeric:true});
+  const parkKey = r => JSON.stringify([r.park.trim().toLocaleLowerCase(),r.country.trim().toLocaleLowerCase()]);
   let storageBlocked = false, recoveryRaw = '', saveFailed = false, pendingImport = null, drag = null, dragFrame = null;
   try {
     const raw = localStorage.getItem(STORAGE);
@@ -73,7 +76,11 @@
     toastTimer = setTimeout(() => $('toast').hidden = true, 6500);
   }
   function visibleRides() {
-    return state.rides.filter(r => (view === 'all' || r.ranked === (view === 'ranked')) && `${r.name} ${r.park} ${r.country} ${r.type} ${r.manufacturer} ${r.notes}`.toLocaleLowerCase().includes(query.toLocaleLowerCase()));
+    const rides = state.rides.filter(r => (view === 'all' || r.ranked === (view === 'ranked')) && `${r.name} ${r.park} ${r.country} ${r.type} ${r.manufacturer} ${r.notes}`.toLocaleLowerCase().includes(query.toLocaleLowerCase()));
+    if(view==='all')rides.sort((a,b)=>
+      (creditsView==='park'?(Number(!a.park.trim())-Number(!b.park.trim())||alphabetical.compare(a.park.trim(),b.park.trim())||alphabetical.compare(a.country,b.country)||parkKey(a).localeCompare(parkKey(b))):0)
+      ||alphabetical.compare(a.name,b.name)||alphabetical.compare(a.park,b.park)||alphabetical.compare(a.country,b.country)||a.id.localeCompare(b.id));
+    return rides;
   }
   function art(r) {
     const palette = [['#edf3df','#789654'],['#e4eeee','#5b8983'],['#f4ecde','#af915d'],['#f6e7df','#b38265'],['#e7eaf2','#7c87ac']];
@@ -103,22 +110,29 @@
       : new Set(state.rides.map(r => r.park.trim().toLocaleLowerCase()).filter(Boolean)).size;
     $('stat-favorite').textContent = ranked[0]?.name || '—';
     $('demo-banner').hidden = !state.demo || ['explore','wishlist','social','statistics'].includes(view);
-    $('reorder-hint').hidden = view === 'unranked';
+    $('reorder-hint').hidden = view !== 'ranked';
+    $('credits-view-control').hidden = view !== 'all';
+    $('credits-view').value = creditsView;
     const plural = visible.length === 1 ? 'ride' : 'rides';
     $('list-summary').textContent = `${visible.length} ${plural}${query ? ' found' : view === 'ranked' ? ' in your ranking' : view === 'unranked' ? ' waiting to be ranked' : ' in your collection'}${view==='all'?' · '+C.creditCount(visible)+' credits':''}`;
     $('footer-summary').textContent = query ? `Showing ${visible.length} of ${state.rides.filter(r => view === 'all' || r.ranked === (view === 'ranked')).length} rides` : `${C.creditCount(state.rides)} credits · ${state.rides.length} rides · ${ranked.length} ranked`;
     const rankMap = new Map(ranked.map((r,i) => [r.id,i+1]));
-    $('ride-list').innerHTML = visible.length ? visible.map(r => {
+    const rowMarkup = visible.map(r => {
       const rank = rankMap.get(r.id), selected = selection.has(r.id);
       const pov = r.pov || `https://www.youtube.com/results?search_query=${encodeURIComponent(`${r.name} ${r.park} roller coaster POV`)}`;
       return `<article class="ride-row ${selected ? 'selected' : ''}" data-id="${escape(r.id)}" data-position="${rank || ''}">
-        <div class="row-controls">${r.ranked ? `<button class="drag-handle" data-action="drag" aria-label="Reorder ${escape(r.name)}. Use arrow keys to move, Home or End to jump." title="Drag to reorder · arrow keys to move">${icon('grip')}</button>` : '<span style="width:18px"></span>'}<input class="ride-select" type="checkbox" aria-label="Select ${escape(r.name)}" ${selected ? 'checked' : ''}></div>
+        <div class="row-controls">${r.ranked&&view==='ranked' ? `<button class="drag-handle" data-action="drag" aria-label="Reorder ${escape(r.name)}. Use arrow keys to move, Home or End to jump." title="Drag to reorder · arrow keys to move">${icon('grip')}</button>` : '<span style="width:18px"></span>'}<input class="ride-select" type="checkbox" aria-label="Select ${escape(r.name)}" ${selected ? 'checked' : ''}></div>
         <button class="rank-button" data-action="rank" aria-label="${rank ? `Move ${escape(r.name)} from rank ${rank}` : `Rank ${escape(r.name)}`}" title="${rank ? 'Move to a specific rank' : 'Add to ranking'}">${rank || '+'}</button>
         <div class="ride-identity">${art(r)}<div class="ride-copy"><span class="ride-title">${escape(r.name)}</span><div class="ride-location">${escape(r.park || 'Park not added')}${r.country ? `<span>·</span><span class="country" style="margin:0;color:inherit">${escape(r.country)}</span>` : ''}</div>${r.tracks?.length?`<small class="ride-track-summary">${C.creditValue(r)} ${C.creditValue(r)===1?'credit':'credits'} · ${escape(r.tracks.filter(t=>t.ridden).map(t=>t.name).join(' / ')||'Track not recorded')}${r.preferredTrack?' · Favorite: '+escape(r.tracks.find(t=>t.id===r.preferredTrack)?.name):''}</small>`:''}${view==='all'&&r.tracks?`<details class="ride-track-details"><summary>Track credits</summary>${r.tracks.some(t=>t.ridden)?r.tracks.filter(t=>t.ridden).map(t=>`<div>${escape(t.name)} · 1 credit${t.id===r.preferredTrack?' · Favorite':''}</div>`).join(''):'<div>1 credit · Track not recorded</div>'}</details>`:''}</div></div>
         <div class="ride-type"><span class="type-badge">${escape(r.type)}</span></div>
         <div class="row-actions">${r.rcdb?`<a class="icon-button rcdb-link" href="${escape(r.rcdb)}" target="_blank" rel="noopener noreferrer" aria-label="RCDB page for ${escape(r.name)}" title="RCDB">RCDB</a>`:''}<a class="icon-button" href="${escape(pov)}" target="_blank" rel="noopener noreferrer" aria-label="${r.pov ? 'Watch' : 'Find'} ${escape(r.name)} POV on YouTube" title="${r.pov ? 'Watch POV' : 'Find a POV on YouTube'}">${icon('play')}</a><button class="icon-button ride-edit" data-action="edit" title="Ride details" aria-label="Edit ${escape(r.name)}">Edit</button></div>
       </article>`;
-    }).join('') : emptyHTML();
+    });
+    if(view==='all'&&creditsView==='park'&&visible.length){
+      const groups=new Map();
+      visible.forEach((r,i)=>{const key=parkKey(r);if(!groups.has(key))groups.set(key,{park:r.park.trim(),country:r.country,rides:[],rows:[]});const group=groups.get(key);group.rides.push(r);group.rows.push(rowMarkup[i]);});
+      $('ride-list').innerHTML=[...groups.values()].map(g=>`<section class="credits-park-group"><div class="credits-park-heading"><h2>${escape(g.park||'Park not listed')}${g.country?`<small>${escape(g.country)}</small>`:''}</h2><span>${g.rides.length} ${g.rides.length===1?'ride':'rides'} · ${C.creditCount(g.rides)} credits</span></div>${g.rows.join('')}</section>`).join('');
+    }else $('ride-list').innerHTML = rowMarkup.length ? rowMarkup.join('') : emptyHTML();
     $('undo-button').disabled = !history.length;
     renderSelection(); updateSaveStatus();document.dispatchEvent(new Event('tracklist:render'));
   }
@@ -293,6 +307,7 @@
   }
   document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>setView(b.dataset.view));
   $('search').addEventListener('input',e=>{query=e.target.value;selection.clear();lastSelected=null;render();});
+  $('credits-view').onchange=e=>{if(drag)finishDrag(true);creditsView=e.target.value==='park'?'park':'name';selection.clear();lastSelected=null;render();};
   $('add-button').onclick=()=>{if(view==='wishlist')document.dispatchEvent(new Event('tracklist:wish-picker'));else if(view==='all')addModal();}; $('backup-button').onclick=backupModal; $('footer-backup').onclick=backupModal;
   $('export-top').onclick=()=>exportData();
   $('clear-demo').onclick=()=>confirmModal('Remove sample rides?', 'This removes the sample rides. Any rides you added are kept. You can undo this change.', 'Start my own list',()=>{selection.clear();query='';$('search').value='';commit(state.rides.filter(r=>!r.demoRide),'Sample rides cleared. Your collection is ready.',false);closeModal();if(!state.rides.length){view='all';render();addModal();}});
