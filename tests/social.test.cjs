@@ -48,6 +48,16 @@ test('malformed shared snapshots and raw service errors never expose diagnostics
   docs.set(chunk,{text:'{bad'});await assert.rejects(api.social.read('alice'),/Social features are unavailable/);
   sdk.store.getDocFromServer=async()=>{throw Error('INTERNAL PROJECT DETAILS');};await assert.rejects(api.social.lookup('airtime_alice'),error=>!error.message.includes('INTERNAL'));
 });
+
+test('legacy shared track rows remain readable and republish in the new format without a private edit',async()=>{
+  const {api,docs}=await backend();await api.social.claim('airtime_alice');
+  const old={version:1,rides:[{id:'green',name:'Stardust Racers (Green)',park:'Universal Epic Universe',ranked:true},{id:'yellow',name:'Stardust Racers (Yellow)',park:'Universal Epic Universe',ranked:true}],wishlist:[],parkWishlist:[]};
+  await api.adapter.write('alice',null,'legacy-private',old);const head={username:'airtime_alice',visible:true,revision:'legacy-public',sourceRevision:'legacy-private',parts:1,at:'2026-10-10T00:00:00.000Z',credits:2,ranked:2,parks:1,wishes:0,parkWishes:0};
+  docs.set('profiles/alice',head);docs.set('profiles/alice/versions/legacy-public/chunks/0',{text:JSON.stringify(old)});
+  const read=await api.social.read('alice');assert.equal(read.data.rides.length,1);assert.equal(read.head.credits,2);assert.equal(read.head.ranked,1);
+  assert.equal(await api.social.publishLatest(),true);assert.equal(docs.get('profiles/alice').ranked,1);assert.equal(docs.get('profiles/alice').sourceRevision,'legacy-private');assert.equal(docs.has('profiles/alice/versions/legacy-public/chunks/0'),false);
+  assert.equal((await api.social.read('alice')).data.version,2);
+});
 function app(t,{signed=true,missing=false,denied=false}={}){
   const dom=new JSDOM(fs.readFileSync(path.join(root,'index.html'),'utf8'),{url:'https://example.test/Tracklist/',runScripts:'outside-only',pretendToBeVisual:true}),w=dom.window,d=w.document,errors=[];
   w.addEventListener('error',event=>errors.push(event.error));w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;};

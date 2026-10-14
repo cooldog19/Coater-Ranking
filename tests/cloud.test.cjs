@@ -36,3 +36,8 @@ test('cloud history retains ten revisions and cleans up only older snapshots aft
   for(let i=0;i<12;i++){const head=await adapter.write('alice',base,`v${i}`,C.normalize({version:1,rides:[{name:String(i)}]}));base=head.revision;}
   const history=await adapter.history('alice');assert.equal(history.length,10);assert.equal(history[0].revision,'v11');assert.equal(history.at(-1).revision,'v2');assert.equal(docs.has('users/alice/snapshots/v0'),false);assert.equal(docs.has('users/alice/snapshots/v1/chunks/0'),false);assert.equal(docs.size,21);
 });
+
+test('cloud saves preserve two track credits, one ride and the complete private track details',async()=>{
+  const {adapter,docs}=await cloud(),state=C.normalize({version:2,rides:[{name:'Twin ride',tracks:[{id:'red',name:'Red',ridden:true,notes:'PRIVATE RED',riddenOn:'2024-01-01'},{id:'blue',name:'Blue',ridden:true,notes:'PRIVATE BLUE',riddenOn:'2025-01-01'}],preferredTrack:'blue'}]});
+  const head=await adapter.write('alice',null,'tracks',state);assert.equal(head.rides,2);assert.equal((await adapter.read('alice',head)).rides.length,1);assert.equal(JSON.stringify(await adapter.read('alice',head)),JSON.stringify(state));assert(docs.get('users/alice/snapshots/tracks/chunks/0').text.includes('PRIVATE BLUE'));
+});

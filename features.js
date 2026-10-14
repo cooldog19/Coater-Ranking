@@ -5,8 +5,9 @@
   const data=TRACKLIST_CATALOG,records=data.rides,allParks=K.parks(records);
   let catalogMode='parks',catalogQuery='',country='',parkId='',status='current',catalogPage=0,migrationRows=[],wishParkId='';
   const date=()=>{const now=new Date();return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;};
-  const credited=record=>A.getState().rides.find(r=>!r.demoRide&&K.same(r,record));
-  const planned=record=>A.getState().wishlist.find(r=>K.same(r,record));
+  let catalogState;
+  const credited=record=>(catalogState||=A.getState()).rides.find(r=>!r.demoRide&&K.same(r,record));
+  const planned=record=>(catalogState||=A.getState()).wishlist.find(r=>K.same(r,record));
   const current=r=>['Operating','Unknown','Closed','Standing but not operating'].includes(r.status);
   const selectedRecords=()=>{
     const q=K.fold(catalogQuery);
@@ -15,12 +16,13 @@
   function recordCard(r,wishlist=false){
     const owned=credited(r),wish=planned(r);
     const pov=r.pov||`https://www.youtube.com/results?search_query=${encodeURIComponent(`${r.name} ${r.park} roller coaster POV`)}`;
-    return `<article class="catalog-ride" data-catalog-id="${e(r.id)}"><div class="catalog-ride-main">${A.art(r)}<div><h3>${e(r.name)}</h3><p>${e(r.park)} · ${e(r.country||'Country not listed')}</p><div class="catalog-tags"><span>${e(r.type)}</span>${r.manufacturer?`<span>${e(r.manufacturer)}</span>`:''}${r.status?`<span class="catalog-status">${e(r.status)}</span>`:''}</div></div></div><div class="catalog-ride-actions"><div class="catalog-links">${r.rcdb?`<a href="${e(r.rcdb)}" target="_blank" rel="noopener noreferrer">RCDB ↗</a>`:`<a href="https://rcdb.com/qs.htm?qs=${encodeURIComponent(`${r.name} ${r.park}`)}" target="_blank" rel="noopener noreferrer">Find on RCDB ↗</a>`}<a href="${e(pov)}" target="_blank" rel="noopener noreferrer">${r.pov?'Watch':'Find'} POV ↗</a>${r.source?`<a href="${e(r.source)}" target="_blank" rel="noopener noreferrer">Source ↗</a>`:''}</div><div class="catalog-buttons">${owned?`<button class="button small" data-catalog-action="rank">${owned.ranked?'Ranked #'+(A.getState().rides.filter(r=>r.ranked).findIndex(x=>x.id===owned.id)+1):'Credit logged · Rank it'}</button>`:`<button class="button small primary" data-catalog-action="log">${A.icon('plus')}Log credit</button>`}${wishlist?'<button class="button small quiet" data-catalog-action="remove">Remove</button>':owned?'':`<button class="button small quiet" data-catalog-action="plan" ${wish?'disabled':''}>${wish?'On wish list':'Wish for ride'}</button>`}</div></div></article>`;
+    return `<article class="catalog-ride" data-catalog-id="${e(r.id)}"><div class="catalog-ride-main">${A.art(r)}<div><h3>${e(r.name)}</h3><p>${e(r.park)} · ${e(r.country||'Country not listed')}</p><div class="catalog-tags"><span>${e(r.type)}</span>${r.manufacturer?`<span>${e(r.manufacturer)}</span>`:''}${r.status?`<span class="catalog-status">${e(r.status)}</span>`:''}${owned?.tracks?`<span>${C.creditValue(owned)} credits · ${e(owned.tracks.filter(t=>t.ridden).map(t=>t.name).join(' / ')||'Track not recorded')}</span>`:''}</div></div></div><div class="catalog-ride-actions"><div class="catalog-links">${r.rcdb?`<a href="${e(r.rcdb)}" target="_blank" rel="noopener noreferrer">RCDB ↗</a>`:`<a href="https://rcdb.com/qs.htm?qs=${encodeURIComponent(`${r.name} ${r.park}`)}" target="_blank" rel="noopener noreferrer">Find on RCDB ↗</a>`}<a href="${e(pov)}" target="_blank" rel="noopener noreferrer">${r.pov?'Watch':'Find'} POV ↗</a>${r.source?`<a href="${e(r.source)}" target="_blank" rel="noopener noreferrer">Source ↗</a>`:''}</div><div class="catalog-buttons">${owned?`<button class="button small" data-catalog-action="rank">${owned.ranked?'Ranked #'+(A.getState().rides.filter(r=>r.ranked).findIndex(x=>x.id===owned.id)+1):'Credit logged · Rank it'}</button>${owned.tracks?'<button class="button small quiet" data-catalog-action="tracks">Tracks & credits</button>':''}`:`<button class="button small primary" data-catalog-action="log">${A.icon('plus')}Log credit</button>`}${wishlist?'<button class="button small quiet" data-catalog-action="remove">Remove</button>':owned?'':`<button class="button small quiet" data-catalog-action="plan" ${wish?'disabled':''}>${wish?'On wish list':'Wish for ride'}</button>`}</div></div></article>`;
   }
 
   const savedPark=id=>A.getState().parkWishlist.some(p=>p.id===id);
   function parkCard(p,wish=false){
-    return `<article class="park-card"><button class="park-open" data-${wish?'wish-park':'park-id'}="${e(p.id)}"><span class="park-card-symbol">${A.icon('park')}</span><strong>${e(p.name)}</strong><span>${e(p.country||'Country not listed')}</span><small>${p.rides.filter(current).length} current / status-unknown rides · ${p.rides.filter(r=>credited(r)).length} credited</small></button><button class="button small park-save" data-park-${wish?'remove':'save'}="${e(p.id)}" ${!wish&&savedPark(p.id)?'disabled':''}>${wish?'Remove park':savedPark(p.id)?'Park saved':'Add to wish list'}</button></article>`;
+    const own=[...new Map(p.rides.map(r=>credited(r)).filter(Boolean).map(r=>[r.id,r])).values()];
+    return `<article class="park-card"><button class="park-open" data-${wish?'wish-park':'park-id'}="${e(p.id)}"><span class="park-card-symbol">${A.icon('park')}</span><strong>${e(p.name)}</strong><span>${e(p.country||'Country not listed')}</span><small>${p.rides.filter(current).length} current / status-unknown rides · ${C.creditCount(own)} credits</small></button><button class="button small park-save" data-park-${wish?'remove':'save'}="${e(p.id)}" ${!wish&&savedPark(p.id)?'disabled':''}>${wish?'Remove park':savedPark(p.id)?'Park saved':'Add to wish list'}</button></article>`;
   }
   function renderCatalog(){
     if(A.getView()!=='explore')return;
@@ -56,6 +58,7 @@
     const wish=state.wishlist.find(r=>K.same(r,record));
     const ride=C.ride({...K.fromRecord(record,C),notes:wish?.notes||'',riddenOn:date(),ranked:false});
     A.change({rides:[...state.rides.filter(r=>!(r.demoRide&&K.same(r,record))),ride],wishlist:state.wishlist.filter(r=>!K.same(r,record))},`${ride.name} logged. Find it in Unranked.`);
+    if(ride.tracks&&credited(record))A.editModal(credited(record).id);
   }
   for(const panel of ['explore-panel','wishlist-panel'])$(panel).addEventListener('click',event=>{
     const save=event.target.closest('[data-park-save]');if(save){const p=allParks.find(x=>x.id===save.dataset.parkSave);if(p&&!savedPark(p.id))A.change({parkWishlist:[...A.getState().parkWishlist,{id:p.id,name:p.name,country:p.country}]},p.name+' added to your wish list.');return;}
@@ -69,10 +72,11 @@
     const state=A.getState();
     if(action.dataset.catalogAction==='log')logRecord(record);
     else if(action.dataset.catalogAction==='rank'){const own=credited(record);if(own)A.rankModal(own.id);}
+    else if(action.dataset.catalogAction==='tracks'){const own=credited(record);if(own)A.editModal(own.id);}
     else if(action.dataset.catalogAction==='plan'){if(!planned(record)&&!credited(record)){wishParkId=K.parkKey(record);A.change({wishlist:[...state.wishlist,K.fromRecord(record,C)]},`${record.name} added to your wish list.`);}}
     else if(action.dataset.catalogAction==='remove')A.change({wishlist:state.wishlist.filter(r=>!K.same(r,record))},'Ride removed from your wish list.');
   });
-  document.addEventListener('tracklist:render',()=>{renderCatalog();renderWishlist();});
+  document.addEventListener('tracklist:render',()=>{catalogState=null;renderCatalog();renderWishlist();});
   document.addEventListener('tracklist:add-form',event=>{
     if(event.detail.multiple)return;
     const form=$('ride-form');form.insertAdjacentHTML('afterbegin','<div class="catalog-autofill"><label class="field"><span>Find in the ride catalog</span><input type="search" id="add-catalog-search" placeholder="Search a ride or park to fill its details…"></label><div id="add-catalog-results"></div></div>');
@@ -84,6 +88,7 @@
       const button=event.target.closest('[data-autofill]');if(!button)return;const record=records.find(r=>r.id===button.dataset.autofill);
       for(const field of ['name','park','country','manufacturer','type','pov','rcdb'])if($('field-'+field))$('field-'+field).value=record[field]||'';
       form.dataset.catalogId=record.id;$('add-catalog-results').innerHTML='';$('add-catalog-search').value=record.name;
+      A.mountTrackFields(C.ride({...record,ranked:false}));
     };
   });
   function migrationModal(){
@@ -93,7 +98,7 @@
   }
   function migrationReview(){
     const matched=migrationRows.filter(r=>r.matchedId).length;
-    A.openModal(`${A.modalHeader('Review your credits.', `${migrationRows.length} entries · ${matched} matched · ${migrationRows.length-matched} need review`)}<div class="modal-body"><p class="privacy-note">Matched records fill park, type, manufacturer, country and links. An unmatched entry can be kept with the details from your pasted list. A matching existing credit will be skipped.</p><div class="migration-preview">${migrationRows.map((row,i)=>`<div class="migration-row"><label><input type="checkbox" data-migration-include="${i}" checked> <strong>${e(row.ride.name)}</strong><small>${e(row.ride.park||'Park not supplied')}</small></label><label class="field"><span class="sr-only">Catalog match for ${e(row.ride.name)}</span><select data-migration-match="${i}"><option value="">Keep as entered · no catalog match</option>${row.candidates.map(r=>`<option value="${e(r.id)}" ${row.matchedId===r.id?'selected':''}>${e(r.name)} · ${e(r.park)}</option>`).join('')}</select></label></div>`).join('')}</div><p id="migration-error" class="form-error" hidden role="alert"></p></div><div class="modal-actions"><button class="button quiet" id="migration-back">Back</button><button class="button primary" id="migration-import">Import selected credits</button></div>`);
+    A.openModal(`${A.modalHeader('Review your credits.', `${migrationRows.length} entries · ${matched} matched · ${migrationRows.length-matched} need review`)}<div class="modal-body"><p class="privacy-note">Matched records fill park, type, manufacturer, country and links. An unmatched entry can be kept with the details from your pasted list. Matching rides keep their ranking and notes; newly ridden tracks are merged into that ride.</p><div class="migration-preview">${migrationRows.map((row,i)=>`<div class="migration-row"><label><input type="checkbox" data-migration-include="${i}" checked> <strong>${e(row.ride.name)}</strong><small>${e(row.ride.park||'Park not supplied')}</small></label><label class="field"><span class="sr-only">Catalog match for ${e(row.ride.name)}</span><select data-migration-match="${i}"><option value="">Keep as entered · no catalog match</option>${row.candidates.map(r=>`<option value="${e(r.id)}" ${row.matchedId===r.id?'selected':''}>${e(r.name)} · ${e(r.park)}</option>`).join('')}</select></label></div>`).join('')}</div><p id="migration-error" class="form-error" hidden role="alert"></p></div><div class="modal-actions"><button class="button quiet" id="migration-back">Back</button><button class="button primary" id="migration-import">Import selected credits</button></div>`);
     $('migration-back').onclick=migrationModal;
     $('migration-import').onclick=()=>{
       try{
@@ -103,7 +108,7 @@
         });
         if(!chosen.length)throw new Error('Select at least one credit.');
         const state=A.getState(),merged=C.merge(state.rides.filter(r=>!r.demoRide),chosen);
-        A.change({rides:merged.rides,wishlist:state.wishlist.filter(w=>!merged.rides.some(r=>K.same(r,w)))},`${merged.added} credits imported; ${merged.skipped} duplicates skipped.`);A.closeModal();A.setView('unranked');
+        A.change({rides:merged.rides,wishlist:state.wishlist.filter(w=>!merged.rides.some(r=>K.same(r,w)))},`${merged.creditsAdded} credits imported across ${merged.added} new rides${merged.updated?`; ${merged.updated} rides updated with track details`:""}.`);A.closeModal();A.setView('unranked');
       }catch(error){$('migration-error').textContent=error.message;$('migration-error').hidden=false;}
     };
   }

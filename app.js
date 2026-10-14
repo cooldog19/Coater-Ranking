@@ -54,10 +54,11 @@
   function updateSaveStatus() { $('save-status').innerHTML = `<span class="status-dot" style="${saveFailed ? 'background:#db7151' : ''}"></span>${saveFailed ? 'Backup needed' : 'Saved on this device'}`; }
   function checkpoint(force=false){try{globalThis.TracklistRecovery?.save(localStorage,state,STORAGE,force);}catch{}}
   function commit(rides, message, demo = state.demo, wishlist = state.wishlist, parkWishlist = state.parkWishlist) {
-    if (rides.length > C.LIMIT || wishlist.length>C.LIMIT || parkWishlist.length>C.LIMIT) { toast(`Your collection and wish list can each contain up to ${C.LIMIT.toLocaleString()} rides.`, false); return false; }
+    if (rides.length > C.LIMIT || C.creditCount(rides)>C.LIMIT || wishlist.length>C.LIMIT || parkWishlist.length>C.LIMIT) { toast(`Your collection can contain up to ${C.LIMIT.toLocaleString()} credits, including ridden tracks.`, false); return false; }
+    let next;try{next=C.normalize({...state,rides,wishlist,parkWishlist,demo:demo&&rides.some(r=>r.demoRide),updatedAt:new Date().toISOString()});}catch(error){toast(error.message,false);return false;}
     checkpoint(true);
     history.push(JSON.stringify(state)); if (history.length > 30) history.shift();
-    state = {...state, rides: C.canonical(rides), wishlist, parkWishlist, demo: demo && rides.some(r=>r.demoRide), updatedAt: new Date().toISOString()};
+    state = next;
     selection = new Set([...selection].filter(id => rides.some(r => r.id === id)));
     persist();checkpoint();render(); toast(message);document.dispatchEvent(new Event('tracklist:change')); return true;
   }
@@ -94,14 +95,14 @@
     document.querySelectorAll('[data-view]').forEach(b => {b.classList.toggle('active', b.dataset.view === view); b.setAttribute('aria-pressed', String(b.dataset.view === view));});
     $('ranked-count').textContent = $('tab-ranked').textContent = $('stat-ranked').textContent = ranked.length;
     $('unranked-count').textContent = $('tab-unranked').textContent = unranked;
-    $('all-count').textContent = $('stat-total').textContent = state.rides.length;
+    $('all-count').textContent = $('stat-total').textContent = C.creditCount(state.rides);
     $('stat-parks').textContent = new Set(state.rides.map(r => r.park.trim().toLocaleLowerCase()).filter(Boolean)).size;
     $('stat-favorite').textContent = ranked[0]?.name || '—';
     $('demo-banner').hidden = !state.demo || ['explore','wishlist','social','statistics'].includes(view);
     $('reorder-hint').hidden = view === 'unranked';
     const plural = visible.length === 1 ? 'ride' : 'rides';
-    $('list-summary').textContent = `${visible.length} ${plural}${query ? ' found' : view === 'ranked' ? ' in your ranking' : view === 'unranked' ? ' waiting to be ranked' : ' in your collection'}`;
-    $('footer-summary').textContent = query ? `Showing ${visible.length} of ${state.rides.filter(r => view === 'all' || r.ranked === (view === 'ranked')).length} rides` : `${state.rides.length} credits · ${ranked.length} ranked`;
+    $('list-summary').textContent = `${visible.length} ${plural}${query ? ' found' : view === 'ranked' ? ' in your ranking' : view === 'unranked' ? ' waiting to be ranked' : ' in your collection'}${view==='all'?' · '+C.creditCount(visible)+' credits':''}`;
+    $('footer-summary').textContent = query ? `Showing ${visible.length} of ${state.rides.filter(r => view === 'all' || r.ranked === (view === 'ranked')).length} rides` : `${C.creditCount(state.rides)} credits · ${state.rides.length} rides · ${ranked.length} ranked`;
     const rankMap = new Map(ranked.map((r,i) => [r.id,i+1]));
     $('ride-list').innerHTML = visible.length ? visible.map(r => {
       const rank = rankMap.get(r.id), selected = selection.has(r.id);
@@ -109,7 +110,7 @@
       return `<article class="ride-row ${selected ? 'selected' : ''}" data-id="${escape(r.id)}" data-position="${rank || ''}">
         <div class="row-controls">${r.ranked ? `<button class="drag-handle" data-action="drag" aria-label="Reorder ${escape(r.name)}. Use arrow keys to move, Home or End to jump." title="Drag to reorder · arrow keys to move">${icon('grip')}</button>` : '<span style="width:18px"></span>'}<input class="ride-select" type="checkbox" aria-label="Select ${escape(r.name)}" ${selected ? 'checked' : ''}></div>
         <button class="rank-button" data-action="rank" aria-label="${rank ? `Move ${escape(r.name)} from rank ${rank}` : `Rank ${escape(r.name)}`}" title="${rank ? 'Move to a specific rank' : 'Add to ranking'}">${rank || '+'}</button>
-        <div class="ride-identity">${art(r)}<div class="ride-copy"><span class="ride-title">${escape(r.name)}</span><div class="ride-location">${escape(r.park || 'Park not added')}${r.country ? `<span>·</span><span class="country" style="margin:0;color:inherit">${escape(r.country)}</span>` : ''}</div></div></div>
+        <div class="ride-identity">${art(r)}<div class="ride-copy"><span class="ride-title">${escape(r.name)}</span><div class="ride-location">${escape(r.park || 'Park not added')}${r.country ? `<span>·</span><span class="country" style="margin:0;color:inherit">${escape(r.country)}</span>` : ''}</div>${r.tracks?.length?`<small class="ride-track-summary">${C.creditValue(r)} ${C.creditValue(r)===1?'credit':'credits'} · ${escape(r.tracks.filter(t=>t.ridden).map(t=>t.name).join(' / ')||'Track not recorded')}${r.preferredTrack?' · Favorite: '+escape(r.tracks.find(t=>t.id===r.preferredTrack)?.name):''}</small>`:''}${view==='all'&&r.tracks?`<details class="ride-track-details"><summary>Track credits</summary>${r.tracks.some(t=>t.ridden)?r.tracks.filter(t=>t.ridden).map(t=>`<div>${escape(t.name)} · 1 credit${t.id===r.preferredTrack?' · Favorite':''}</div>`).join(''):'<div>1 credit · Track not recorded</div>'}</details>`:''}</div></div>
         <div class="ride-type"><span class="type-badge">${escape(r.type)}</span></div>
         <div class="row-actions">${r.rcdb?`<a class="icon-button rcdb-link" href="${escape(r.rcdb)}" target="_blank" rel="noopener noreferrer" aria-label="RCDB page for ${escape(r.name)}" title="RCDB">RCDB</a>`:''}<a class="icon-button" href="${escape(pov)}" target="_blank" rel="noopener noreferrer" aria-label="${r.pov ? 'Watch' : 'Find'} ${escape(r.name)} POV on YouTube" title="${r.pov ? 'Watch POV' : 'Find a POV on YouTube'}">${icon('play')}</a><button class="icon-button ride-edit" data-action="edit" title="Ride details" aria-label="Edit ${escape(r.name)}">Edit</button></div>
       </article>`;
@@ -165,14 +166,29 @@
         if (commit([...state.rides,...added], `${added.length === 1 ? added[0].name : `${added.length} rides`} added.`)) {view = added[0].ranked ? 'ranked' : 'unranked'; query=''; $('search').value=''; render(); closeModal(); if(compare)globalThis.TracklistQuiz.start({mode:'queue',ids:added.map(r=>r.id)});}
       } catch (error) { formError(error.message); }
     };
+    if(!multiple)mountTrackFields({});
     document.dispatchEvent(new CustomEvent('tracklist:add-form',{detail:{multiple}}));
   }
   function rideFields(r = {}) {
-    return `<div class="form-grid">${field('Ride name','name',r.name,{required:true,full:true,placeholder:'e.g. Steel Vengeance'})}${field('Park','park',r.park,{placeholder:'e.g. Cedar Point'})}${field('Country','country',r.country,{max:80,placeholder:'e.g. United States'})}<label class="field"><span>Coaster type</span><select id="field-type" name="type">${C.TYPES.map(t=>`<option ${r.type === t ? 'selected' : ''}>${t}</option>`).join('')}</select></label>${field('Manufacturer','manufacturer',r.manufacturer,{max:100})}${field('First ridden','riddenOn',r.riddenOn,{type:'date',max:10})}${field('YouTube POV link','pov',r.pov,{type:'url',max:2000,mobileFull:true,placeholder:'https://youtube.com/watch?v=…'})}${field('RCDB ride page','rcdb',r.rcdb,{type:'url',max:2000,full:true,placeholder:'https://rcdb.com/123.htm'})}${field('Personal notes','notes',r.notes,{textarea:true,full:true,placeholder:'Seats, ride experience, or anything you want to remember'})}</div><label class="inline-check"><input name="ranked" type="checkbox" ${r.ranked !== false ? 'checked' : ''}>${r.id ? 'Included in my ranking' : 'Add to the end of my ranking'}</label>`;
+    return `<div class="form-grid">${field('Ride name','name',r.name,{required:true,full:true,placeholder:'e.g. Steel Vengeance'})}${field('Park','park',r.park,{placeholder:'e.g. Cedar Point'})}${field('Country','country',r.country,{max:80,placeholder:'e.g. United States'})}<label class="field"><span>Coaster type</span><select id="field-type" name="type">${C.TYPES.map(t=>`<option ${r.type === t ? 'selected' : ''}>${t}</option>`).join('')}</select></label>${field('Manufacturer','manufacturer',r.manufacturer,{max:100})}${field('First ridden','riddenOn',r.riddenOn,{type:'date',max:10})}${field('YouTube POV link','pov',r.pov,{type:'url',max:2000,mobileFull:true,placeholder:'https://youtube.com/watch?v=…'})}${field('RCDB ride page','rcdb',r.rcdb,{type:'url',max:2000,full:true,placeholder:'https://rcdb.com/123.htm'})}${field('Personal notes','notes',r.notes,{textarea:true,full:true,placeholder:'Seats, ride experience, or anything you want to remember'})}</div><div id="track-fields"></div><label class="inline-check"><input name="ranked" type="checkbox" ${r.ranked !== false ? 'checked' : ''}>${r.id ? 'Included in my ranking' : 'Add to the end of my ranking'}</label>`;
+  }
+  let formTracks=[];
+  function readTrackForm(data,force=false){return data.has('multi-track')||force?formTracks.map((t,i)=>({...t,name:data.get('track-name-'+i),ridden:data.has('track-ridden-'+i),notes:data.get('track-notes-'+i)||'',riddenOn:data.get('track-date-'+i)||''})):[];}
+  function mountTrackFields(r){
+    if(!$('track-fields'))return;formTracks=JSON.parse(JSON.stringify(r.tracks?.length?r.tracks:[{id:C.uid(),name:'Track 1',ridden:true},{id:C.uid(),name:'Track 2',ridden:false}]));
+    const enabled=!!r.tracks?.length;
+    function draw(on,preferred=''){$('track-fields').innerHTML=`<section class="track-editor"><label class="inline-check"><input id="multi-track" name="multi-track" type="checkbox" ${on?'checked':''}>This ride has separate tracks</label><fieldset class="track-options" ${on?'':'disabled hidden'}><legend class="sr-only">Track credits</legend><p>Check each track you’ve ridden. Each counts as a credit; the ride keeps one ranking position. No selected track keeps one unspecified credit.</p>${formTracks.map((t,i)=>`<div class="track-editor-row"><label class="inline-check"><input name="track-ridden-${i}" type="checkbox" ${t.ridden?'checked':''}>Ridden</label><label class="field"><span>Track name</span><input name="track-name-${i}" maxlength="80" value="${escape(t.name)}" required></label><button class="button small quiet" type="button" data-remove-track="${i}" aria-label="Remove ${escape(t.name)} track">Remove</button><details><summary>Private track notes & date</summary><label class="field"><span>Track notes</span><textarea name="track-notes-${i}" maxlength="10000" rows="2">${escape(t.notes||'')}</textarea></label><label class="field"><span>First ridden on this track</span><input type="date" name="track-date-${i}" value="${escape(t.riddenOn||'')}"></label></details></div>`).join('')}<button class="button small" type="button" id="add-track" ${formTracks.length>=8?'disabled':''}>Add another track</button><label class="field"><span>Favorite track (optional)</span><select name="preferredTrack"><option value="">No preference</option>${formTracks.map(t=>`<option value="${escape(t.id)}" ${t.id===preferred?'selected':''}>${escape(t.name)}</option>`).join('')}</select><small>Favorites apply only to tracks you’ve marked ridden.</small></label><strong id="track-credit-preview" role="status"></strong></fieldset></section>`;
+      $('multi-track').onchange=event=>{const data=new FormData($('ride-form'));if(!$('track-fields').querySelector('fieldset').disabled)formTracks=readTrackForm(data,true);if(!formTracks.length)formTracks=[{id:C.uid(),name:'Track 1',ridden:true},{id:C.uid(),name:'Track 2',ridden:false}];draw(event.target.checked,data.get('preferredTrack'));};
+      const preview=()=>{const list=readTrackForm(new FormData($('ride-form'))),count=Math.max(1,list.filter(t=>t.ridden).length);$('track-credit-preview').textContent=`${count} ${count===1?'credit':'credits'} · 1 ranking item`;};
+      $('track-fields').oninput=preview;preview();
+      $('add-track').onclick=()=>{const data=new FormData($('ride-form'));formTracks=readTrackForm(data);formTracks.push({id:C.uid(),name:'Track '+(formTracks.length+1),ridden:false});draw(true,data.get('preferredTrack'));};
+      $('track-fields').querySelectorAll('[data-remove-track]').forEach(b=>b.onclick=()=>{const data=new FormData($('ride-form'));formTracks=readTrackForm(data);formTracks.splice(Number(b.dataset.removeTrack),1);draw(!!formTracks.length,data.get('preferredTrack'));});
+    }draw(enabled,r.preferredTrack);
+    for(const name of ['name','park'])$('field-'+name).onchange=()=>{if($('multi-track').checked)return;const raw={name:$('field-name').value,park:$('field-park').value};if(C.trackFamily(raw))mountTrackFields(C.ride({...raw,ranked:false}));};
   }
   function readRideForm(data, used = new Set(), id) {
     const previous=id?state.rides.find(r=>r.id===id):null;
-    const raw={...previous,...Object.fromEntries(data.entries()),id:id || C.uid(),ranked:data.has('ranked'),demoRide:previous?.demoRide||false};
+    const raw={...previous,...Object.fromEntries(data.entries()),tracks:readTrackForm(data),id:id || C.uid(),ranked:data.has('ranked'),demoRide:previous?.demoRide||false};
     if(globalThis.TracklistCatalog&&globalThis.TRACKLIST_CATALOG){const matching=TracklistCatalog.match(raw,TRACKLIST_CATALOG.rides);if(matching.match)return C.ride(TracklistCatalog.enrich(raw,matching.match),used);}
     return C.ride(raw,used);
   }
@@ -186,15 +202,23 @@
       e.preventDefault();
       try {
         const updated = readRideForm(new FormData(e.target),new Set(),id);
-        commit(state.rides.map(x=>x.id===id ? updated : x),'Ride details saved.'); closeModal();
+        if(commit(state.rides.map(x=>x.id===id ? updated : x),'Ride details saved.'))closeModal();
       } catch(error) {formError(error.message);}
     };
+    mountTrackFields(r);
+    const combine=document.createElement('button');combine.className='button';combine.id='combine-track-entries';combine.disabled=r.demoRide;combine.textContent='Combine separate track entries';$('ride-form').after(combine);combine.onclick=()=>combineModal(id);
     $('delete-ride').onclick = () => confirmModal('Delete this ride?', `${escape(r.name)} will be removed from your credits and ranking. You can undo this change.`, 'Delete ride', () => {commit(state.rides.filter(x=>x.id!==id),'Ride deleted.'); closeModal();}, () => editModal(id));
     $('edit-rank').onclick = () => {
-      try {const updated = readRideForm(new FormData($('ride-form')),new Set(),id); commit(state.rides.map(x=>x.id===id?updated:x),'Ride details saved.'); rankModal(id);}
+      try {const updated = readRideForm(new FormData($('ride-form')),new Set(),id);if(commit(state.rides.map(x=>x.id===id?updated:x),'Ride details saved.'))rankModal(id);}
       catch(error) {formError(error.message);}
     };
     if (focusNotes) { $('field-notes').focus(); }
+  }
+  function combineModal(id){const primary=state.rides.find(r=>r.id===id),others=state.rides.filter(r=>r.id!==id&&!r.demoRide&&(C.sameRide(primary,r)||primary.park.trim().toLowerCase()===r.park.trim().toLowerCase()));
+    openModal(`${modalHeader('Combine track entries',escape(primary.name))}<div class="modal-body"><p>Keep this ride’s ranking position and combine another entry into its tracks. Ridden tracks and private notes are kept. Undo can restore both entries.</p>${others.length?`<form id="combine-form"><label class="field"><span>Other track entry</span><select name="other" id="combine-other">${others.map(r=>`<option value="${escape(r.id)}">${escape(r.name)}</option>`).join('')}</select></label>${field('Combined ride name','combined-name',C.trackFamily(primary)?.name||primary.name,{required:true})}${field('This entry’s track name','primary-track',primary.tracks?.some(t=>t.ridden)?'Existing track names':primary.name,{required:true})}${field('Other entry’s track name','other-track',others[0].tracks?.some(t=>t.ridden)?'Existing track names':others[0].name,{required:true})}<p>Entries already containing named, ridden tracks keep those names. Otherwise give each track a distinct name.</p><p id="form-error" class="form-error" hidden role="alert"></p></form>`:'<p>No other credit entries from this park are available.</p>'}</div><div class="modal-actions"><button class="button quiet" id="combine-cancel">Back to ride</button>${others.length?'<button class="button primary" type="submit" form="combine-form">Combine tracks</button>':''}</div>`);
+    $('combine-cancel').onclick=()=>editModal(id);if(!others.length)return;
+    $('combine-other').onchange=event=>{const other=others.find(r=>r.id===event.target.value);$('field-other-track').value=other.tracks?.some(t=>t.ridden)?'Existing track names':other.name;};
+    $('combine-form').onsubmit=event=>{event.preventDefault();try{const data=new FormData(event.target),other=state.rides.find(r=>r.id===data.get('other'));if(!other)throw Error('Choose an existing track entry.');const merged=C.ride({...C.combineRides(primary,other,[data.get('primary-track'),data.get('other-track')]),name:data.get('combined-name')});const inheritOther=!primary.ranked&&other.ranked;const rides=state.rides.flatMap(r=>r.id===other.id?(inheritOther?[merged]:[]):r.id===primary.id?(inheritOther?[]:[merged]):[r]);if(commit(rides,'Tracks combined into one ranking item.')){closeModal();editModal(primary.id);}}catch(error){formError(error.message);}};
   }
   function rankModal(id) {
     const r = state.rides.find(r=>r.id===id); if (!r) return;
@@ -251,7 +275,7 @@
   function importReview(filename) {
     const imported=pendingImport, merged=C.merge(state.rides,imported.rides,true);
     const ranked=imported.rides.filter(r=>r.ranked).length;
-    openModal(`${modalHeader('Your import is ready.',escape(filename))}<div class="modal-body"><div class="review-summary"><strong>${imported.rides.length} rides</strong> · ${ranked} ranked · ${imported.rides.length-ranked} unranked<br>${merged.added} new rides · ${merged.skipped} matching rides already in your collection</div><form id="import-form"><label class="radio-choice"><input type="radio" name="mode" value="merge" ${!state.demo&&!storageBlocked?'checked':''}><span><strong>Merge into my collection</strong><small>Keep existing rides and their order. Add new ranked rides at the end. Matching names and parks are skipped.</small></span></label><label class="radio-choice"><input type="radio" name="mode" value="replace" ${state.demo||storageBlocked?'checked':''}><span><strong>Replace my collection</strong><small>Use the imported collection and its ranking. Your current collection is replaced. Undo is available.</small></span></label><p id="form-error" class="form-error" role="alert" hidden></p></form></div><div class="modal-actions"><button class="button quiet" id="import-back">Back</button><button class="button primary" type="submit" form="import-form">Import ${imported.rides.length} rides</button></div>`);
+    openModal(`${modalHeader('Your import is ready.',escape(filename))}<div class="modal-body"><div class="review-summary"><strong>${C.creditCount(imported.rides)} credits · ${imported.rides.length} rides</strong> · ${ranked} ranked · ${imported.rides.length-ranked} unranked<br>${merged.added} new rides · ${merged.skipped} matching rides already in your collection</div><form id="import-form"><label class="radio-choice"><input type="radio" name="mode" value="merge" ${!state.demo&&!storageBlocked?'checked':''}><span><strong>Merge into my collection</strong><small>Keep existing rides and their order. Add new ranked rides at the end. Matching rides keep their ranking and notes; extra ridden tracks are merged.</small></span></label><label class="radio-choice"><input type="radio" name="mode" value="replace" ${state.demo||storageBlocked?'checked':''}><span><strong>Replace my collection</strong><small>Use the imported collection and its ranking. Your current collection is replaced. Undo is available.</small></span></label><p id="form-error" class="form-error" role="alert" hidden></p></form></div><div class="modal-actions"><button class="button quiet" id="import-back">Back</button><button class="button primary" type="submit" form="import-form">Import ${imported.rides.length} rides</button></div>`);
     $('import-back').onclick=backupModal;
     $('import-form').onsubmit=e=>{
       e.preventDefault();const mode=new FormData(e.target).get('mode');
@@ -352,7 +376,7 @@
     if(e.key!==STORAGE||!e.newValue)return;
     try{const next=C.normalize(JSON.parse(e.newValue));finishDrag(true);state=next;history=[];selection.clear();storageBlocked=false;saveFailed=false;$('storage-warning').hidden=true;if($('modal').open)closeModal();render();toast('Collection updated from another tab.',false);}catch{showStorageWarning('Another tab changed the saved data to an unreadable format. Export your current collection before continuing.');storageBlocked=true;saveFailed=true;updateSaveStatus();}
   });
-  globalThis.TracklistApp={getState:()=>JSON.parse(JSON.stringify(state)),getView:()=>view,getStorageKey:()=>STORAGE,escape,icon,art,openModal,closeModal,modalHeader,toast,setView,rankModal,editModal,backupModal,exportData,
+  globalThis.TracklistApp={getState:()=>JSON.parse(JSON.stringify(state)),getView:()=>view,getStorageKey:()=>STORAGE,escape,icon,art,openModal,closeModal,modalHeader,toast,setView,rankModal,editModal,backupModal,exportData,mountTrackFields,
     change:(patch,message)=>commit(patch.rides||state.rides,message,state.demo,patch.wishlist||state.wishlist,patch.parkWishlist||state.parkWishlist),
     restore:(next,message)=>{const data=C.normalize(next);return commit(data.rides,message,data.demo,data.wishlist,data.parkWishlist);},
     switchAccount:(uid)=>{
