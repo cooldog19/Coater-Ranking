@@ -63,6 +63,7 @@ test('statistics shortcut, breakdown controls, map pins, park list and keyboard 
 
 test('statistics regenerate after edits and account changes without leaking prior collection data',t=>{
   const a=app(t);a.A.setView('statistics');a.A.change({rides:[]},'Cleared');assert.match(a.d.getElementById('statistics-panel').textContent,/first credit/);assert(!a.d.getElementById('statistics-panel').textContent.includes('One Park'));
+  assert.equal(a.d.querySelector('[data-stats-add]'),null);a.click('[data-stats-credits]');assert.equal(a.A.getView(),'all');assert.equal(a.d.getElementById('modal').open,false);
   a.A.switchAccount('new-account');a.A.setView('statistics');assert(!a.d.getElementById('statistics-panel').textContent.includes('Favorite'));
 });
 

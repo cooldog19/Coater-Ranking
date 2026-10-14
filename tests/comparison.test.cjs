@@ -116,10 +116,10 @@ test('stale ranking changes and corrupt sessions cannot apply outdated compariso
   const stale={...b.session(),expected:'old'};const d=app(t,b.state().rides,{quiz:stale});assert.equal(d.session(),null);
 });
 test('new rides can be added directly to the quiz, including batch additions',t=>{
-  const a=app(t,[ride('a'),ride('b')]);a.click('#add-button');a.d.getElementById('field-name').value='New ride';
+  const a=app(t,[ride('a'),ride('b')]);a.click('[data-view="all"]');a.click('#add-button');a.d.getElementById('field-name').value='New ride';
   a.click('#add-compare');assert.equal(a.state().rides.find(r=>r.name==='New ride').ranked,false);assert(a.d.getElementById('comparison-session'));
   place(a,1);assert.deepEqual(a.state().rides.filter(r=>r.ranked).map(r=>r.name),['a','New ride','b']);
-  a.click('#comparison-done');a.click('#add-button');a.click('#multiple-tab');a.d.getElementById('field-names').value='One | Park\nTwo | Park';a.click('#add-compare');
+  a.click('#comparison-done');a.click('[data-view="all"]');a.click('#add-button');a.click('#multiple-tab');a.d.getElementById('field-names').value='One | Park\nTwo | Park';a.click('#add-compare');
   assert.equal(a.session().queue.length,2);assert(a.state().rides.slice(-2).every(r=>!r.ranked));
 });
 test('keyboard answers, escaped ride text, and failed quiz storage remain usable',t=>{

@@ -3,7 +3,7 @@
   const A=TracklistApp,C=Tracklist,K=TracklistCatalog,Cloud=TracklistCloud,R=TracklistRecovery;
   const $=id=>document.getElementById(id),e=A.escape;
   const data=TRACKLIST_CATALOG,records=data.rides,allParks=K.parks(records);
-  let catalogMode='parks',catalogQuery='',country='',parkId='',status='current',catalogPage=0,migrationRows=[],wishParkId='';
+  let catalogMode='parks',catalogQuery='',country='',parkId='',status='current',catalogPage=0,migrationRows=[],wishParkId='',wishView='parks',wishQuery='',wishPage=0;
   const date=()=>{const now=new Date();return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;};
   let catalogState;
   const credited=record=>(catalogState||=A.getState()).rides.find(r=>!r.demoRide&&K.same(r,record));
@@ -45,14 +45,50 @@
   }
   function renderWishlist(){
     if(A.getView()!=='wishlist')return;
-    const state=A.getState(),groups=new Map();
-    for(const p of state.parkWishlist)groups.set(p.id,{...p,rides:[...(allParks.find(x=>x.id===p.id)?.rides||[])],saved:true});
-    for(const r of state.wishlist){const id=K.parkKey(r)||'ungrouped';if(!groups.has(id)){const catalog=allParks.find(p=>p.id===id);groups.set(id,{id,name:r.park||'Unassigned rides',country:r.country,rides:[...(catalog?.rides||[])],saved:false});}const p=groups.get(id);if(!p.rides.some(x=>K.same(x,r)))p.rides.push(r);}
-    const parks=[...groups.values()],active=groups.get(wishParkId);
-    $('wishlist-panel').innerHTML=`<div class="catalog-caption"><strong>${parks.length} parks · ${state.wishlist.length} individual ride wishes</strong><p>Open a park to see its rides and your credits. Saved parks stay here after you log a ride.</p></div>${parks.length?`<div class="park-grid">${parks.map(p=>parkCard(p,true)).join('')}</div>`: '<div class="empty-state"><h2>No parks saved.</h2><p>Find a park in Explore parks and add it to your wish list.</p><button class="button primary" id="wishlist-explore">Explore parks</button></div>'}${active?`<section class="wish-park-detail"><div class="catalog-caption"><h2>${e(active.name)}</h2><p>${active.rides.length} catalog rides. Historic and planned entries are included with their status.</p><button class="text-button" id="close-wish-park">Close park rides</button></div><div class="catalog-rides">${active.rides.map(r=>recordCard(r,!!planned(r))).join('')}</div></section>`:''}`;
-    if($('wishlist-explore'))$('wishlist-explore').onclick=()=>A.setView('explore');
+    const state=A.getState(),q=K.fold(wishQuery),activeId=document.activeElement?.id,caret=activeId==='wish-search'?document.activeElement.selectionStart:null;
+    const parks=state.parkWishlist.map(p=>({...p,rides:[...(allParks.find(x=>x.id===p.id)?.rides||[])]}));
+    const items=(wishView==='parks'?parks:state.wishlist).filter(r=>!q||K.fold(r.name+' '+(r.park||'')+' '+(r.country||'')).includes(q));
+    if(wishPage*30>=items.length)wishPage=0;
+    const shown=items.slice(wishPage*30,wishPage*30+30),active=wishView==='parks'?parks.find(p=>p.id===wishParkId):null;
+    $('wishlist-panel').innerHTML=`<div class="catalog-toolbar"><div class="modal-tabs" role="group" aria-label="Wish list view"><button data-wish-view="parks" aria-pressed="${wishView==='parks'}" class="${wishView==='parks'?'active':''}">Parks wish list (${parks.length})</button><button data-wish-view="rides" aria-pressed="${wishView==='rides'}" class="${wishView==='rides'?'active':''}">Rides wish list (${state.wishlist.length})</button></div><label class="field catalog-search"><span class="sr-only">Search your wish list</span><input id="wish-search" type="search" value="${e(wishQuery)}" placeholder="Search saved ${wishView}…"></label></div>
+      <div class="catalog-caption"><strong>${items.length} ${wishView} saved${q?' matching your search':''}</strong><p>${wishView==='parks'?'Open a saved park to see its catalog rides and your credits.':'Your individual ride wishes. Saving a ride does not save its park.'}</p></div>
+      ${shown.length?wishView==='parks'?`<div class="park-grid">${shown.map(p=>parkCard(p,true)).join('')}</div>`:`<div class="catalog-rides">${shown.map(r=>recordCard(records.find(c=>c.id===r.catalogId)||r,true)).join('')}</div>`:`<div class="empty-state"><h2>${q?'No wishes match.':'No '+wishView+' saved yet.'}</h2><p>${q?'Try another ride or park name.':'Use “Wish List a Park/Ride” to choose from the catalog.'}</p></div>`}
+      ${items.length>30?`<div class="catalog-footer"><button class="button small" data-wish-page="${wishPage-1}" ${wishPage===0?'disabled':''}>Previous</button><span>${wishPage+1} / ${Math.ceil(items.length/30)}</span><button class="button small" data-wish-page="${wishPage+1}" ${(wishPage+1)*30>=items.length?'disabled':''}>Next</button></div>`:''}
+      ${active?`<section class="wish-park-detail"><div class="catalog-caption"><h2>${e(active.name)}</h2><p>${active.rides.length} catalog rides. Historic and planned entries are included with their status.</p><button class="text-button" id="close-wish-park">Close park rides</button></div><div class="catalog-rides">${active.rides.map(r=>recordCard(r,!!planned(r))).join('')}</div></section>`:''}`;
+    $('wish-search').oninput=event=>{wishQuery=event.target.value;wishPage=0;renderWishlist();};
     if($('close-wish-park'))$('close-wish-park').onclick=()=>{wishParkId='';renderWishlist();};
+    if(activeId==='wish-search'){const input=$('wish-search');input.focus({preventScroll:true});try{input.setSelectionRange(caret,caret);}catch{}}
   }
+  function wishPicker(){
+    let mode=wishView,query='',page=0;
+    A.openModal(`${A.modalHeader('Wish List a Park/Ride', 'Choose parks to visit or individual rides to try.')}<div class="modal-body"><div class="modal-tabs" role="group" aria-label="Catalog wish type"><button data-wish-picker-mode="parks">Parks</button><button data-wish-picker-mode="rides">Rides</button></div><label class="field"><span>Search the catalog</span><input id="wish-picker-search" type="search" placeholder="Search parks or rides…" autocomplete="off"></label><p id="wish-picker-count" class="help-copy" role="status"></p><div id="wish-picker-results" class="wish-picker-results"></div><div class="wish-picker-pages"><button class="button small" id="wish-picker-previous">Previous</button><span id="wish-picker-page"></span><button class="button small" id="wish-picker-next">Next</button></div></div><div class="modal-actions"><button class="button primary" data-close>Done</button></div>`);
+    function results(){
+      const q=K.fold(query),state=A.getState(),items=(mode==='parks'?allParks:records).filter(r=>!q||K.fold(r.name+' '+(r.park||'')+' '+(r.country||'')+' '+(r.aliases||[]).join(' ')).includes(q));
+      if(page*20>=items.length)page=0;
+      document.querySelectorAll('[data-wish-picker-mode]').forEach(b=>{b.classList.toggle('active',b.dataset.wishPickerMode===mode);b.setAttribute('aria-pressed',String(b.dataset.wishPickerMode===mode));});
+      $('wish-picker-count').textContent=items.length+' '+mode+' found';
+      $('wish-picker-results').innerHTML=items.length?items.slice(page*20,page*20+20).map(r=>{
+        const saved=mode==='parks'?state.parkWishlist.some(p=>p.id===r.id):state.wishlist.some(w=>K.same(w,r));
+        const owned=mode==='rides'&&state.rides.some(c=>!c.demoRide&&K.same(c,r));
+        return `<article class="wish-picker-row"><div><strong>${e(r.name)}</strong><small>${e(mode==='parks'?r.country:(r.park+' · '+(r.country||'Country not listed')))}${mode==='rides'&&r.status?' · '+e(r.status):''}</small></div><button class="button small" data-wish-picker-add="${e(r.id)}" ${saved||owned?'disabled':''} aria-label="${e((saved?'Already saved: ':owned?'Credit logged: ':'Wish list '+(mode==='parks'?'park: ':'ride: '))+r.name)}">${saved?'Saved':owned?'Credit logged':'Wish list'}</button></article>`;
+      }).join(''):'<p class="help-copy">No matches. Try another park or ride name.</p>';
+      $('wish-picker-previous').disabled=page===0;$('wish-picker-next').disabled=(page+1)*20>=items.length;
+      $('wish-picker-page').textContent=(items.length?page+1:0)+' / '+Math.ceil(items.length/20);
+    }
+    document.querySelectorAll('[data-wish-picker-mode]').forEach(b=>b.onclick=()=>{mode=b.dataset.wishPickerMode;page=0;results();});
+    $('wish-picker-search').oninput=event=>{query=event.target.value;page=0;results();};
+    $('wish-picker-previous').onclick=()=>{page--;results();};$('wish-picker-next').onclick=()=>{page++;results();};
+    $('wish-picker-results').onclick=event=>{
+      const button=event.target.closest('[data-wish-picker-add]');if(!button||button.disabled)return;
+      const record=(mode==='parks'?allParks:records).find(r=>r.id===button.dataset.wishPickerAdd);if(!record)return;
+      const state=A.getState();wishView=mode;wishQuery='';wishPage=0;
+      if(mode==='parks'){if(!state.parkWishlist.some(p=>p.id===record.id))A.change({parkWishlist:[...state.parkWishlist,{id:record.id,name:record.name,country:record.country}]},record.name+' added to your park wish list.');}
+      else if(!state.wishlist.some(w=>K.same(w,record))&&!state.rides.some(r=>!r.demoRide&&K.same(r,record)))A.change({wishlist:[...state.wishlist,K.fromRecord(record,C)]},record.name+' added to your ride wish list.');
+      results();
+    };
+    results();$('wish-picker-search').focus();
+  }
+  document.addEventListener('tracklist:wish-picker',wishPicker);
   function logRecord(record){
     const state=A.getState();if(state.rides.some(r=>!r.demoRide&&K.same(r,record))){A.toast('This ride is already in your credits.',false);return;}
     const wish=state.wishlist.find(r=>K.same(r,record));
@@ -62,7 +98,9 @@
   }
   for(const panel of ['explore-panel','wishlist-panel'])$(panel).addEventListener('click',event=>{
     const save=event.target.closest('[data-park-save]');if(save){const p=allParks.find(x=>x.id===save.dataset.parkSave);if(p&&!savedPark(p.id))A.change({parkWishlist:[...A.getState().parkWishlist,{id:p.id,name:p.name,country:p.country}]},p.name+' added to your wish list.');return;}
-    const remove=event.target.closest('[data-park-remove]');if(remove){const id=remove.dataset.parkRemove,state=A.getState();A.change({parkWishlist:state.parkWishlist.filter(p=>p.id!==id),wishlist:state.wishlist.filter(r=>(K.parkKey(r)||'ungrouped')!==id)},'Park removed from your wish list.');if(wishParkId===id)wishParkId='';renderWishlist();return;}
+    const remove=event.target.closest('[data-park-remove]');if(remove){const id=remove.dataset.parkRemove,state=A.getState();A.change({parkWishlist:state.parkWishlist.filter(p=>p.id!==id)},'Park removed from your wish list.');if(wishParkId===id)wishParkId='';renderWishlist();return;}
+    const wishTab=event.target.closest('[data-wish-view]');if(wishTab){wishView=wishTab.dataset.wishView;wishQuery='';wishPage=0;renderWishlist();return;}
+    const wishPagination=event.target.closest('[data-wish-page]');if(wishPagination){wishPage=Number(wishPagination.dataset.wishPage);renderWishlist();return;}
     const wishPark=event.target.closest('[data-wish-park]');if(wishPark){wishParkId=wishPark.dataset.wishPark;renderWishlist();return;}
     const mode=event.target.closest('[data-catalog-mode]');if(mode){catalogMode=mode.dataset.catalogMode;parkId='';catalogQuery='';catalogPage=0;renderCatalog();return;}
     const park=event.target.closest('[data-park-id]');if(park){parkId=park.dataset.parkId;catalogQuery='';catalogPage=0;renderCatalog();return;}
@@ -73,7 +111,7 @@
     if(action.dataset.catalogAction==='log')logRecord(record);
     else if(action.dataset.catalogAction==='rank'){const own=credited(record);if(own)A.rankModal(own.id);}
     else if(action.dataset.catalogAction==='tracks'){const own=credited(record);if(own)A.editModal(own.id);}
-    else if(action.dataset.catalogAction==='plan'){if(!planned(record)&&!credited(record)){wishParkId=K.parkKey(record);A.change({wishlist:[...state.wishlist,K.fromRecord(record,C)]},`${record.name} added to your wish list.`);}}
+    else if(action.dataset.catalogAction==='plan'){if(!planned(record)&&!credited(record)){wishView='rides';wishQuery='';wishPage=0;A.change({wishlist:[...state.wishlist,K.fromRecord(record,C)]},`${record.name} added to your wish list.`);}}
     else if(action.dataset.catalogAction==='remove')A.change({wishlist:state.wishlist.filter(r=>!K.same(r,record))},'Ride removed from your wish list.');
   });
   document.addEventListener('tracklist:render',()=>{catalogState=null;renderCatalog();renderWishlist();});

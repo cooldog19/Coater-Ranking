@@ -83,12 +83,14 @@
   }
   function render() {
     const ranked = state.rides.filter(r => r.ranked), unranked = state.rides.length - ranked.length, visible = visibleRides();
-    const titles = {ranked:'My ranking',unranked:'Unranked',all:'All credits',explore:'Explore parks',wishlist:'Wish list',social:'Social',statistics:'Statistics'};
-    const descriptions = {ranked:'Drag rides to reorder, or click a rank to move them.',unranked:'Place your new credits in the ranking.',all:'Your complete ridden coaster collection.',explore:'Search parks and rides, then log credits or save parks.',wishlist:'Save parks you want to visit and see their rides.',social:'Find your people. Compare your favorites.',statistics:'Find the patterns behind your favorites.'};
+    const titles = {ranked:'My ranking',unranked:'Unranked',all:'Credits',explore:'Explore parks',wishlist:'Wish list',social:'Social',statistics:'Statistics'};
+    const descriptions = {ranked:'Drag rides to reorder, or click a rank to move them.',unranked:'Place your new credits in the ranking.',all:'Your complete ridden coaster collection.',explore:'Search parks and rides, then log credits or save parks.',wishlist:'Keep track of parks to visit and rides to try.',social:'Find your people. Compare your favorites.',statistics:'Find the patterns behind your favorites.'};
     $('ranking-panel').hidden=['explore','wishlist','social','statistics'].includes(view);$('explore-panel').hidden=view!=='explore';$('wishlist-panel').hidden=view!=='wishlist';if($('social-panel'))$('social-panel').hidden=view!=='social';if($('statistics-panel'))$('statistics-panel').hidden=view!=='statistics';
     if($('statistics-shortcut'))$('statistics-shortcut').hidden=!['ranked','unranked','all'].includes(view);
-    $('add-button').hidden=['social','statistics'].includes(view);
-    $('wishlist-count').textContent=new Set([...state.parkWishlist.map(p=>p.id),...state.wishlist.map(r=>globalThis.TracklistCatalog?.parkKey(r)||r.park)]).size;
+    $('add-button').hidden=!['all','wishlist'].includes(view);
+    $('add-button').innerHTML=icon('plus')+(view==='wishlist'?'Wish List a Park/Ride':'Add a ride');
+    $('credit-entry-note').hidden=!['ranked','unranked'].includes(view);
+    $('wishlist-count').textContent=state.parkWishlist.length+state.wishlist.length;
     $('collection-stats').hidden=['explore','wishlist','social','statistics'].includes(view);
     $('page-title').innerHTML = `${titles[view]}<span>.</span>`;
     $('page-description').textContent = descriptions[view]; $('breadcrumb-view').textContent = titles[view];
@@ -123,7 +125,7 @@
   function emptyHTML() {
     if (query) return `<div class="empty-state"><div class="empty-symbol">${icon('search')}</div><h2>No rides found.</h2><p>Try another ride, park, or a word from your notes.</p><button class="button" data-action="clear-search">Clear search</button></div>`;
     const isUnranked = view === 'unranked';
-    return `<div class="empty-state"><div class="empty-symbol">${icon(isUnranked ? 'inbox' : 'ticket')}</div><h2>${isUnranked ? 'No unranked rides.' : 'No rides in this view.'}</h2><p>${isUnranked ? 'New credits can wait here until you’re ready to give them a place in your ranking.' : 'Add a coaster you’ve ridden, or bring in your collection from a JSON or CSV file.'}</p><button class="button primary" data-action="add">${icon('plus')}Add a ride</button>${isUnranked ? '' : '<button class="button" data-action="backup">Import a collection</button>'}</div>`;
+    return `<div class="empty-state"><div class="empty-symbol">${icon(isUnranked ? 'inbox' : 'ticket')}</div><h2>${isUnranked ? 'No unranked rides.' : 'No rides in this view.'}</h2><p>${isUnranked ? 'New credits can wait here until you’re ready to give them a place in your ranking.' : 'Add a coaster you’ve ridden, or bring in your collection from a JSON or CSV file.'}</p>${view==='all'?`<button class="button primary" data-action="add">${icon('plus')}Add a ride</button>`:'<button class="button primary" data-action="credits">Go to Credits</button>'}${isUnranked ? '' : '<button class="button" data-action="backup">Import a collection</button>'}</div>`;
   }
   function renderSelection() {
     $('bulk-toolbar').hidden = selection.size === 0; $('selection-count').textContent = `${selection.size} selected`;
@@ -291,9 +293,9 @@
   }
   document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>setView(b.dataset.view));
   $('search').addEventListener('input',e=>{query=e.target.value;selection.clear();lastSelected=null;render();});
-  $('add-button').onclick=()=>addModal(); $('backup-button').onclick=backupModal; $('footer-backup').onclick=backupModal;
+  $('add-button').onclick=()=>{if(view==='wishlist')document.dispatchEvent(new Event('tracklist:wish-picker'));else if(view==='all')addModal();}; $('backup-button').onclick=backupModal; $('footer-backup').onclick=backupModal;
   $('export-top').onclick=()=>exportData();
-  $('clear-demo').onclick=()=>confirmModal('Remove sample rides?', 'This removes the sample rides. Any rides you added are kept. You can undo this change.', 'Start my own list',()=>{selection.clear();query='';$('search').value='';commit(state.rides.filter(r=>!r.demoRide),'Sample rides cleared. Your collection is ready.',false);closeModal();if(!state.rides.length)addModal();});
+  $('clear-demo').onclick=()=>confirmModal('Remove sample rides?', 'This removes the sample rides. Any rides you added are kept. You can undo this change.', 'Start my own list',()=>{selection.clear();query='';$('search').value='';commit(state.rides.filter(r=>!r.demoRide),'Sample rides cleared. Your collection is ready.',false);closeModal();if(!state.rides.length){view='all';render();addModal();}});
   $('undo-button').onclick=undo; $('toast-undo').onclick=undo; $('toast-close').onclick=()=>$('toast').hidden=true;
   $('select-all').onchange=e=>{visibleRides().forEach(r=>e.target.checked?selection.add(r.id):selection.delete(r.id));renderSelection();};
   $('clear-selection').onclick=()=>{selection.clear();renderSelection();};
@@ -314,7 +316,8 @@
     const id=row?.dataset.id;
     if(action.dataset.action==='rank')rankModal(id);
     else if(['edit','notes'].includes(action.dataset.action))editModal(id,action.dataset.action==='notes');
-    else if(action.dataset.action==='add')addModal();
+    else if(action.dataset.action==='add'&&view==='all')addModal();
+    else if(action.dataset.action==='credits')setView('all');
     else if(action.dataset.action==='backup')backupModal();
     else if(action.dataset.action==='clear-search'){query='';$('search').value='';render();$('search').focus();}
   });

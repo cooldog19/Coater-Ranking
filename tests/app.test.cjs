@@ -56,7 +56,7 @@ test('bulk selection moves rides together; unranking and ranking from the inbox 
   assert.equal(a.names()[0],'VelociCoaster');
 });
 test('adding and editing personal rides preserves notes; clearing samples keeps personal additions',t=>{
-  const a=app(t);a.click('#add-button');a.fill('field-name','My ride <script>alert(1)</script>');a.fill('field-park','My park');a.fill('field-notes','Back seat\nA great day.');a.fill('field-pov','https://youtu.be/test');a.submit('ride-form');
+  const a=app(t);a.click('[data-view="all"]');a.click('#add-button');a.fill('field-name','My ride <script>alert(1)</script>');a.fill('field-park','My park');a.fill('field-notes','Back seat\nA great day.');a.fill('field-pov','https://youtu.be/test');a.submit('ride-form');
   assert.equal(a.saved().rides.length,13);assert.equal(a.doc.querySelectorAll('script:not([src])').length,0);
   assert.equal(a.doc.getElementById('demo-banner').hidden,false);
   a.click('#clear-demo');a.click('#confirm-action');assert.deepEqual(a.names(),['My ride <script>alert(1)</script>']);assert.equal(a.saved().rides[0].notes,'Back seat\nA great day.');
@@ -64,7 +64,7 @@ test('adding and editing personal rides preserves notes; clearing samples keeps 
   a.click('.ride-row [data-action="edit"]');a.click('#delete-ride');a.click('#confirm-action');assert.equal(a.names().length,0);a.click('#undo-button');assert.equal(a.names().length,1);
 });
 test('bulk add, search, unranked inbox and empty search results are functional',t=>{
-  const a=app(t,{saved:{version:1,rides:[]}});a.click('#add-button');a.click('#multiple-tab');a.fill('field-names','Alpha | First Park\nBeta | Second Park');a.submit('ride-form');
+  const a=app(t,{saved:{version:1,rides:[]}});a.click('[data-view="all"]');a.click('#add-button');a.click('#multiple-tab');a.fill('field-names','Alpha | First Park\nBeta | Second Park');a.submit('ride-form');
   assert.deepEqual(a.names(),['Alpha','Beta']);assert.equal(a.doc.getElementById('stat-ranked').textContent,'0');
   a.fill('search','Second Park');a.doc.getElementById('search').dispatchEvent(new a.w.Event('input'));assert.deepEqual(a.names(),['Beta']);
   a.fill('search','no match');a.doc.getElementById('search').dispatchEvent(new a.w.Event('input'));assert.equal(a.doc.querySelector('.empty-state h2').textContent,'No rides found.');a.click('[data-action="clear-search"]');assert.equal(a.names().length,2);
@@ -92,7 +92,7 @@ test('JSON downloads contain the entire collection, including notes and unranked
 });
 test('storage failure is visible and does not prevent in-memory editing and exports',t=>{
   const a=app(t,{saved:{version:1,rides:[]},quota:true});assert.equal(a.doc.getElementById('storage-warning').hidden,false);
-  a.click('#add-button');a.fill('field-name','Unsaved ride');a.submit('ride-form');assert.deepEqual(a.names(),['Unsaved ride']);assert.match(a.doc.getElementById('save-status').textContent,/Backup needed/);
+  a.click('[data-view="all"]');a.click('#add-button');a.fill('field-name','Unsaved ride');a.submit('ride-form');assert.deepEqual(a.names(),['Unsaved ride']);assert.match(a.doc.getElementById('save-status').textContent,/Backup needed/);
   a.click('#export-top');assert.equal(a.downloads.length,1);
 });
 test('corrupt saved data is preserved until an explicit recovery or replacement',t=>{

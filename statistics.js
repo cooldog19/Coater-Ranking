@@ -8,7 +8,7 @@
   function breakdown(rows,label,key){return `<section class="stats-card" data-stats-group="${key}"><div class="stats-card-heading"><h3>${label}</h3><span>${rows.filter(r=>r.credits&&r.known).length} known</span></div><div class="stats-breakdown-body"></div></section>`;}
   function overview(report,{shared=false,prefix='own'}={}){
     const t=report.totals;
-    if(!t.credits)return `<div class="empty-state"><h2>${shared?'No credits to explore yet.':'Your preferences start with your first credit.'}</h2><p>${report.demo?'Sample rides are excluded. Log your own credits to build your statistics.':'Log credits and rank them to discover your favorites.'}</p>${shared?'':'<button class="button primary" data-stats-add>Add a ride</button>'}</div>`;
+    if(!t.credits)return `<div class="empty-state"><h2>${shared?'No credits to explore yet.':'Your preferences start with your first credit.'}</h2><p>${report.demo?'Sample rides are excluded. Log your own credits to build your statistics.':'Log credits and rank them to discover your favorites.'}</p>${shared?'':'<button class="button primary" data-stats-credits>Go to Credits</button>'}</div>`;
     return `<div class="statistics-overview" data-stats-prefix="${prefix}">
       <div class="stats-totals">${card(t.credits,'Credits')}${card(t.ranked,'Ranked rides')}${card(t.parks,'Parks visited')}${card(t.countries,'Countries')}${card(t.manufacturers,'Manufacturers')}${card(t.rides,'Rides')}</div>
       ${summary(report)}
@@ -34,7 +34,7 @@
       section.querySelectorAll('[data-stats-page]').forEach(b=>b.onclick=()=>{pages[key]=Number(b.dataset.statsPage);charts();});
     });}
     const selector=container.querySelector('[data-stats-measure]');if(selector)selector.onchange=()=>{measure=selector.value;Object.keys(pages).forEach(k=>delete pages[k]);charts();};charts();
-    container.querySelector('[data-stats-add]')?.addEventListener('click',() => document.getElementById('add-button').click());
+    container.querySelector('[data-stats-credits]')?.addEventListener('click',()=>A.setView('all'));
     container.querySelector('[data-stats-rank]')?.addEventListener('click',()=>A.setView('unranked'));
     if(container.querySelector('[data-park-map]'))bindMap(container,report);
   }
