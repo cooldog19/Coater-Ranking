@@ -17,19 +17,20 @@
     // An explicit allowlist prevents private notes, dates and future private fields being shared.
     const fields=['id','name','park','country','type','manufacturer','ranked','rcdb','pov','catalogId'];
     const result=Object.fromEntries(fields.map(key=>[key,normalized[key]|| (key==='ranked'?false:'')]));
+    if(normalized.tracks){result.tracks=normalized.tracks.map(({id,name,ridden,rcdb,pov,catalogId})=>({id,name,ridden,rcdb,pov,catalogId}));result.preferredTrack=normalized.preferredTrack||'';}
     if(raw.source){try{const u=new URL(raw.source);if(u.protocol==='https:'&&!u.username&&!u.password&&!u.port&&['coasterpedia.net','www.wikidata.org'].includes(u.hostname)){result.source=u.href;result.license=String(raw.license||'').slice(0,100);}}catch{}}
     return result;
   }
   function project(state){
     const clean=C.normalize(state);
-    return {version:1,rides:clean.rides.filter(r=>!r.demoRide).map(ride),wishlist:clean.wishlist.map(ride),parkWishlist:clean.parkWishlist.map(({id,name,country})=>({id,name,country}))};
+    return {version:C.VERSION,rides:clean.rides.filter(r=>!r.demoRide).map(ride),wishlist:clean.wishlist.map(ride),parkWishlist:clean.parkWishlist.map(({id,name,country})=>({id,name,country}))};
   }
   function parse(text){
     let raw;try{raw=JSON.parse(text);}catch{throw new Error('This profile could not be read. Try again later.');}
     return project(raw);
   }
   function stats(data){
-    return {credits:data.rides.length,ranked:data.rides.filter(r=>r.ranked).length,parks:new Set(data.rides.map(r=>r.park.trim().toLowerCase()).filter(Boolean)).size,wishes:data.wishlist.length,parkWishes:data.parkWishlist.length};
+    return {credits:C.creditCount(data.rides),ranked:data.rides.filter(r=>r.ranked).length,parks:new Set(data.rides.map(r=>r.park.trim().toLowerCase()).filter(Boolean)).size,wishes:data.wishlist.length,parkWishes:data.parkWishlist.length};
   }
   function header(data){
     const counts=['credits','ranked','parks','wishes','parkWishes'];

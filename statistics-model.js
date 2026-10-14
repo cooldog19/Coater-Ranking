@@ -23,21 +23,22 @@
       return {...r,manufacturer:manufacturerAliases.get(fold(manufacturer))||manufacturer,type,country:country||place?.country||'',park,parkId:record?.parkId||'',mapPlace:place};
     }
     const rides=clean.rides.filter(r=>!r.demoRide).map(enrich),wishes=clean.wishlist.map(enrich),ranked=rides.filter(r=>r.ranked),ranks=new Map(ranked.map((r,i)=>[r.id,i+1]));
+    const credits=C.creditCount(rides);
     const rankScore=rank=>ranked.length<2?100:100*(ranked.length-rank)/(ranked.length-1);
     function groups(field){const map=new Map();
       const add=(r,wish)=>{const label=field==='park'?(r.park||'Park not listed'):unknown(r[field])?'Not listed':r[field];const key=field==='park'?(r.mapPlace?.id||K.parkKey({park:label}))+'|'+fold(r.country):fold(label);
         if(!map.has(key))map.set(key,{key,name:label,country:field==='park'?r.country:'',known:field==='park'?!!r.park:label!=='Not listed',credits:0,ranked:0,top10:0,wishes:0,sumRank:0,sumScore:0,rides:[],...(field==='park'&&r.mapPlace?{location:{lat:r.mapPlace.lat,lon:r.mapPlace.lon,source:r.mapPlace.source}}:{})});
-        const row=map.get(key);if(wish){row.wishes++;return;}row.credits++;row.rides.push(r);const rank=ranks.get(r.id);if(rank){row.ranked++;row.sumRank+=rank;row.sumScore+=rankScore(rank);if(rank<=10)row.top10++;}
+        const row=map.get(key);if(wish){row.wishes++;return;}row.credits+=C.creditValue(r);row.rides.push(r);const rank=ranks.get(r.id);if(rank){row.ranked++;row.sumRank+=rank;row.sumScore+=rankScore(rank);if(rank<=10)row.top10++;}
       };
       rides.forEach(r=>add(r,false));wishes.forEach(r=>add(r,true));
-      return [...map.values()].map(r=>({...r,averageRank:r.ranked?r.sumRank/r.ranked:null,score:r.ranked?r.sumScore/r.ranked:null,share:rides.length?100*r.credits/rides.length:0}));
+      return [...map.values()].map(r=>({...r,averageRank:r.ranked?r.sumRank/r.ranked:null,score:r.ranked?r.sumScore/r.ranked:null,share:credits?100*r.credits/credits:0}));
     }
     const manufacturers=groups('manufacturer'),types=groups('type'),parks=groups('park'),countries=groups('country');
     function favorite(rows){const known=rows.filter(r=>r.known&&r.ranked),minimum=Math.min(3,ranked.length),supported=known.filter(r=>r.ranked>=minimum);return [...(supported.length?supported:known)].sort((a,b)=>b.score-a.score||b.ranked-a.ranked||a.name.localeCompare(b.name))[0]||null;}
     const years=new Map();for(const r of rides)if(r.riddenOn){const year=r.riddenOn.slice(0,4);years.set(year,(years.get(year)||0)+1);}
     return {rides,ranked,top10:ranked.slice(0,10),ranks,manufacturers,types,parks,countries,favorites:{manufacturer:favorite(manufacturers),type:favorite(types),park:favorite(parks)},
-      totals:{credits:rides.length,ranked:ranked.length,unranked:rides.length-ranked.length,parks:parks.filter(p=>p.known&&p.credits).length,countries:countries.filter(p=>p.known&&p.credits).length,manufacturers:manufacturers.filter(p=>p.known&&p.credits).length,wishes:wishes.length,parkWishes:clean.parkWishlist.length},
-      coverage:{manufacturer:rides.filter(r=>!unknown(r.manufacturer)).length,type:rides.filter(r=>!unknown(r.type)).length,country:rides.filter(r=>!unknown(r.country)).length,park:rides.filter(r=>r.park).length,dates:rides.filter(r=>r.riddenOn).length},
+      totals:{credits,rides:rides.length,ranked:ranked.length,unranked:rides.length-ranked.length,parks:parks.filter(p=>p.known&&p.credits).length,countries:countries.filter(p=>p.known&&p.credits).length,manufacturers:manufacturers.filter(p=>p.known&&p.credits).length,wishes:wishes.length,parkWishes:clean.parkWishlist.length},
+      coverage:{manufacturer:C.creditCount(rides.filter(r=>!unknown(r.manufacturer))),type:C.creditCount(rides.filter(r=>!unknown(r.type))),country:C.creditCount(rides.filter(r=>!unknown(r.country))),park:C.creditCount(rides.filter(r=>r.park)),dates:rides.filter(r=>r.riddenOn).length},
       years:[...years].sort(([a],[b])=>a.localeCompare(b)).map(([name,credits])=>({name,credits})),mapped:parks.filter(p=>p.credits&&p.location),unmapped:parks.filter(p=>p.credits&&p.known&&!p.location),demo:clean.rides.some(r=>r.demoRide)};
   }
   // Screen-space clustering keeps nearby parks readable while preserving every credit.

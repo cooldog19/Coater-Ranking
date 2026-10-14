@@ -12,8 +12,9 @@
     }
     return [...result.values()].filter(p=>fold(`${p.name} ${p.country}`).includes(q)).sort((a,b)=>a.name.localeCompare(b.name));
   }
-  function same(a,b){return !!(a.rcdb&&a.rcdb===b.rcdb)||!!(a.catalogId&&(a.catalogId===b.id||a.catalogId===b.catalogId))||(fold(a.name)===fold(b.name)&&fold(a.park)===fold(b.park));}
+  function same(a,b){const C=root.Tracklist||(typeof require==='function'?require('./core.js'):null);return C.sameRide(a,b)||!!(a.catalogId&&(a.catalogId===b.id||a.catalogId===b.catalogId));}
   function match(ride,rides){
+    const C=root.Tracklist||(typeof require==='function'?require('./core.js'):null),family=C.trackFamily(ride);if(family){const record=rides.find(r=>r.rcdb===family.rcdb);if(record)return {match:record,candidates:[record]};}
     if(ride.rcdb){const exact=rides.find(r=>r.rcdb===ride.rcdb);if(exact)return {match:exact,candidates:[exact]};}
     const name=fold(ride.name),park=parkFold(ride.park);
     const candidates=rides.filter(r=>[r.name,...(r.aliases||[])].some(n=>fold(n)===name));

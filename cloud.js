@@ -32,7 +32,7 @@
       const head=await storeSDK.runTransaction(db,async transaction=>{
         const current=await transaction.get(userDoc(uid));const previous=current.exists()?current.data():null;
         if((previous?.revision||null)!==expected){const error=new Error('Cloud revision changed.');error.code='tracklist/conflict';error.head=previous;throw error;}
-        const entry={revision,parts:parts.length,at,rides:state.rides.length,wishlist:state.wishlist.length,parks:state.parkWishlist.length};
+        const entry={revision,parts:parts.length,at,rides:root.Tracklist.creditCount(state.rides),wishlist:state.wishlist.length,parks:state.parkWishlist.length};
         const history=[entry,...safeHistory(previous)];removed=history.slice(10);
         const next={...entry,history:history.slice(0,10)};
         transaction.set(snapshotDoc(uid,revision),entry);
@@ -92,8 +92,13 @@
         const text=chunks.map(s=>s.data().text).join('');if(new TextEncoder().encode(text).length>6*1024*1024)throw new Error();
         const data=root.TracklistSocialModel.parse(text),current=await social.header(uid);
         if(!current?.visible||current.revision!==head.revision)throw new Error();
-        const stats=root.TracklistSocialModel.stats(data);if(Object.keys(stats).some(key=>stats[key]!==head[key]))throw new Error();
-        return {head,data};
+        const stats=root.TracklistSocialModel.stats(data),raw=JSON.parse(text);
+        // Legacy shared profiles may have separate, identifiable track rows; validate their
+        // original metadata before showing the upgraded one-ride projection.
+        const legacy=raw.version===1&&Array.isArray(raw.rides)&&raw.rides.every(r=>r.tracks===undefined);
+        const expected=legacy?{credits:raw.rides.length,ranked:raw.rides.filter(r=>r.ranked!==false).length,parks:new Set(raw.rides.map(r=>String(r.park||'').trim().toLowerCase()).filter(Boolean)).size,wishes:raw.wishlist?.length||0,parkWishes:raw.parkWishlist?.length||0}:stats;
+        if(Object.keys(expected).some(key=>expected[key]!==head[key]))throw new Error();
+        return {head:{...head,...stats},data};
       }catch(error){throw socialError(error);}
     },
     async friend(target,add=true){
@@ -117,16 +122,17 @@
     async cleanup(uid,previous){if(!previous?.revision)return;try{const batch=storeSDK.writeBatch(db);for(let i=0;i<previous.parts;i++)batch.delete(publicChunk(uid,previous.revision,i));await batch.commit();}catch{/* Inactive public chunks are unreadable even if cleanup fails. */}},
     async publish(uid,head,state){
       if(await socialUser()!==uid)return false;
-      const data=root.TracklistSocialModel.project(state),parts=root.TracklistSyncModel.chunks(data),revision=root.Tracklist.uid();let previous;
+      const data=root.TracklistSocialModel.project(state),parts=root.TracklistSyncModel.chunks(data),revision=root.Tracklist.uid();let previous,changed=false;
       try{const saved=await storeSDK.runTransaction(db,async tx=>{
         const [account,current,profile]=await Promise.all([tx.get(socialDoc(uid)),tx.get(userDoc(uid)),tx.get(profileDoc(uid))]);
+        changed=false;
         const settings=root.TracklistSocialModel.settings(account.exists()?account.data():null);
         if(!settings?.visible||!current.exists()||current.data().revision!==head.revision)return false;
         previous=profile.exists()?root.TracklistSocialModel.header(profile.data()):null;
-        if(previous?.visible&&previous.sourceRevision===head.revision)return true;
+        if(previous?.visible&&previous.sourceRevision===head.revision){const old=await tx.get(publicChunk(uid,previous.revision,0));if(old.exists()&&old.data().text.startsWith('{"version":2,'))return true;}
         const next={username:settings.username,visible:true,revision,sourceRevision:head.revision,parts:parts.length,at:new Date().toISOString(),...root.TracklistSocialModel.stats(data)};
-        parts.forEach((text,i)=>tx.set(publicChunk(uid,revision,i),{text}));tx.set(profileDoc(uid),next);return true;
-      });if(saved&&previous?.sourceRevision!==head.revision)await social.cleanup(uid,previous);return saved;}catch(error){throw socialError(error);}
+        parts.forEach((text,i)=>tx.set(publicChunk(uid,revision,i),{text}));tx.set(profileDoc(uid),next);changed=true;return true;
+      });if(saved&&changed)await social.cleanup(uid,previous);return saved;}catch(error){throw socialError(error);}
     },
     async publishLatest(){const uid=await socialUser();try{const snap=await storeSDK.getDocFromServer(userDoc(uid));if(!snap.exists())return false;const head=snap.data(),state=await adapter.read(uid,head);return await social.publish(uid,head,state);}catch(error){throw socialError(error);}},
   };

@@ -55,7 +55,7 @@
   function rideHTML(r,rank){
     const pov=r.pov||`https://www.youtube.com/results?search_query=${encodeURIComponent(`${r.name} ${r.park} roller coaster POV`)}`;
     const rcdb=r.rcdb||`https://rcdb.com/qs.htm?qs=${encodeURIComponent(`${r.name} ${r.park}`)}`;
-    return `<article class="social-ride"><span class="social-rank">${rank?'#'+rank:'—'}</span><div><strong>${e(r.name)}</strong><small>${e(r.park||'Park not specified')}${r.type?' · '+e(r.type):''}</small></div><div class="social-ride-links"><a href="${e(rcdb)}" target="_blank" rel="noopener noreferrer">RCDB ↗</a><a href="${e(pov)}" target="_blank" rel="noopener noreferrer">POV ↗</a>${r.source?`<a href="${e(r.source)}" target="_blank" rel="noopener noreferrer">Source ↗</a>`:''}</div></article>`;
+    return `<article class="social-ride"><span class="social-rank">${rank?'#'+rank:'—'}</span><div><strong>${e(r.name)}</strong>${r.tracks&&profileTab!=='wishlist'?`<small>${Tracklist.creditValue(r)} credits · ${e(r.tracks.filter(t=>t.ridden).map(t=>t.name).join(' / ')||'Track not recorded')}${r.preferredTrack?' · Favorite: '+e(r.tracks.find(t=>t.id===r.preferredTrack)?.name):''}</small>`:''}<small>${e(r.park||'Park not specified')}${r.type?' · '+e(r.type):''}</small></div><div class="social-ride-links"><a href="${e(rcdb)}" target="_blank" rel="noopener noreferrer">RCDB ↗</a><a href="${e(pov)}" target="_blank" rel="noopener noreferrer">POV ↗</a>${r.source?`<a href="${e(r.source)}" target="_blank" rel="noopener noreferrer">Source ↗</a>`:''}</div></article>`;
   }
   async function observe(user,force=false){
     if(!force&&(user?.uid||null)===(account?.uid||null))return;
