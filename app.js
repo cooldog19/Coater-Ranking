@@ -96,7 +96,9 @@
     $('ranked-count').textContent = $('tab-ranked').textContent = $('stat-ranked').textContent = ranked.length;
     $('unranked-count').textContent = $('tab-unranked').textContent = unranked;
     $('all-count').textContent = $('stat-total').textContent = C.creditCount(state.rides);
-    $('stat-parks').textContent = new Set(state.rides.map(r => r.park.trim().toLocaleLowerCase()).filter(Boolean)).size;
+    $('stat-parks').textContent = globalThis.TracklistStatisticsModel
+      ? TracklistStatisticsModel.analyze(state).totals.parks
+      : new Set(state.rides.map(r => r.park.trim().toLocaleLowerCase()).filter(Boolean)).size;
     $('stat-favorite').textContent = ranked[0]?.name || '—';
     $('demo-banner').hidden = !state.demo || ['explore','wishlist','social','statistics'].includes(view);
     $('reorder-hint').hidden = view === 'unranked';

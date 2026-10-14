@@ -66,9 +66,51 @@ test('statistics regenerate after edits and account changes without leaking prio
   a.A.switchAccount('new-account');a.A.setView('statistics');assert(!a.d.getElementById('statistics-panel').textContent.includes('Favorite'));
 });
 
+test('credit bars use all credits as their denominator on personal and shared statistics',t=>{
+  const state={version:2,rides:Array.from({length:173},(_,i)=>({id:'r'+i,name:'Ride '+i,ranked:true,
+    manufacturer:i<38?'Bolliger & Mabillard':'Maker '+Math.floor((i-38)/27),
+    park:i<38?'One Park':'Other Park '+Math.floor((i-38)/27),
+    country:i<38?'United States':'United Kingdom',type:i<38?'Steel':'Wooden'}))};
+  const a=app(t,state);a.A.setView('statistics');
+  function check(host){
+    for(const [group,name] of [['manufacturers','Bolliger & Mabillard'],['types','Steel'],['parks','One Park'],['countries','United States']]){
+      const row=[...host.querySelectorAll(`[data-stats-group="${group}"] .stats-breakdown-row`)].find(r=>r.querySelector('strong').textContent===name);
+      assert(row);assert(Math.abs(parseFloat(row.querySelector('i').style.width)-100*38/173)<.0001);
+      assert.equal(row.querySelector('span').textContent,'38 · 22%');
+    }
+  }
+  check(a.d.getElementById('statistics-panel'));
+  const host=a.d.createElement('div'),report=a.w.TracklistStatisticsModel.analyze({version:2,...S.project(state)});
+  host.innerHTML=a.w.TracklistStatistics.overview(report,{shared:true});a.w.TracklistStatistics.bind(host,report);check(host);
+});
+
+test('other count bars use their own totals, strength stays absolute and undated rides stay in timeline totals',t=>{
+  const state=collection();state.wishlist.push({name:'Another wish',manufacturer:'Intamin'},{name:'Third wish',manufacturer:'RMC'});
+  const a=app(t,state);a.A.setView('statistics');
+  const selector=a.d.querySelector('[data-stats-measure]');
+  const change=value=>{selector.value=value;selector.dispatchEvent(new a.w.Event('change'));};
+  const first=()=>a.d.querySelector('[data-stats-group="manufacturers"] .stats-breakdown-row');
+  assert.equal(parseFloat(first().querySelector('i').style.width),40);
+  change('top10');assert.equal(parseFloat(first().querySelector('i').style.width),50);assert.equal(first().querySelector('span').textContent,'2 · 50%');
+  change('wishes');assert(Math.abs(parseFloat(first().querySelector('i').style.width)-200/3)<.0001);assert.equal(first().querySelector('span').textContent,'2 · 67%');
+  change('score');assert(Math.abs(parseFloat(first().querySelector('i').style.width)-250/3)<.0001);
+  assert.equal(a.d.querySelector('.stats-year i').style.width,'20%');
+  a.A.change({wishlist:[]},'Cleared wishes');const empty=a.d.querySelector('[data-stats-measure]');empty.value='wishes';empty.dispatchEvent(new a.w.Event('change'));
+  assert.equal(a.d.querySelector('[data-stats-group="manufacturers"] i'),null);
+});
+
+test('ranking and statistics count the same visited parks across aliases and missing locations',t=>{
+  const state={version:2,rides:[{id:'one',name:'One',park:'One Park',ranked:true},{id:'two',name:'Two',park:'Former Park',country:'United States',ranked:true},{id:'three',name:'Three',park:'Unmapped park',ranked:false},{id:'four',name:'Four',ranked:false}]};
+  const a=app(t,state);a.A.setView('ranked');assert.equal(a.d.getElementById('stat-parks').textContent,'2');
+  a.A.setView('statistics');assert.equal(a.d.querySelector('.stats-totals > div:nth-child(3) strong').textContent,'2');
+  assert.match(a.d.querySelector('.stats-park-list summary').textContent,/All visited parks \(2\).*1 location unavailable/);
+  assert.equal(a.A.getState().rides.find(r=>r.id==='two').park,'Former Park');
+});
+
 test('escaped names are inert, long breakdowns paginate, and shared views never show private years',t=>{
   const state={version:1,rides:Array.from({length:25},(_,i)=>({id:'r'+i,name:'<img src=x onerror=alert(1)> '+i,park:'Park '+i,manufacturer:'Maker '+i,ranked:true,riddenOn:'2025-01-01'}))};
   const a=app(t,state);a.A.setView('statistics');assert.equal(a.d.querySelector('#statistics-panel img'),null);assert.equal(a.d.querySelectorAll('[data-stats-group="manufacturers"] .stats-breakdown-row').length,8);a.click('[data-stats-group="manufacturers"] [data-stats-page="1"]');assert.equal(a.d.querySelectorAll('[data-stats-group="manufacturers"] .stats-breakdown-row').length,8);
+  assert.equal(a.d.querySelector('[data-stats-group="manufacturers"] i').style.width,'4%');
   const host=a.d.createElement('div');a.d.body.append(host);const report=a.w.TracklistStatisticsModel.analyze({version:1,...S.project(state)});host.innerHTML=a.w.TracklistStatistics.overview(report,{shared:true});a.w.TracklistStatistics.bind(host,report);assert.equal(host.querySelector('.stats-years'),null);assert(!host.textContent.includes('2025'));assert.equal(host.querySelector('img'),null);
 });
 
