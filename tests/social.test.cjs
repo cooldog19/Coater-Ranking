@@ -80,6 +80,9 @@ test('Social lookup shows shared stats, rankings, credits and both wish lists; f
   a.click('[data-social-tab="credits"]');assert.match(a.d.getElementById('social-profile').textContent,/Next coaster/);
   a.click('[data-social-tab="wishlist"]');assert.match(a.d.getElementById('social-profile').textContent,/Visit park/);assert.match(a.d.getElementById('social-profile').textContent,/Wish coaster/);
   a.click('#social-add-friend');await settle();assert.deepEqual(a.settings.get('alice').friendIds,['bob']);assert(a.d.querySelector('[data-social-friend="bob"]'));a.click('[data-social-remove="bob"]');await settle();assert.deepEqual(a.settings.get('alice').friendIds,[]);
+  a.click('[data-view="all"]');assert.equal(a.d.getElementById('add-button').hidden,false);
+  a.click('[data-view="ranked"]');assert.equal(a.d.getElementById('add-button').hidden,true);
+  a.click('[data-view="wishlist"]');assert.equal(a.d.getElementById('add-button').textContent,'Wish List a Park/Ride');assert.equal(a.d.getElementById('add-button').hidden,false);
 });
 test('guests and existing accounts without usernames have clear social entry points',async t=>{
   const guest=app(t,{signed:false});await settle();guest.click('[data-view="social"]');assert(guest.d.getElementById('social-login'));guest.click('#social-login');assert.equal(guest.d.getElementById('modal-title').textContent,'Log in');

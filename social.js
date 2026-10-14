@@ -7,7 +7,6 @@
   const current=(version,uid)=>version===epoch&&uid===account?.uid;
   const unavailable='Social features are unavailable right now. Check your connection and try again.';
   function render(){
-    $('add-button').hidden=['social','statistics'].includes(A.getView());
     if(A.getView()!=='social')return;
     const panel=$('social-panel');
     if(!account){panel.innerHTML='<div class="empty-state"><h2>Find friends on Tracklist.</h2><p>Log in or create an account to choose a username, share a profile and save friends.</p><button class="button primary" id="social-login">Log in</button></div>';$('social-login').onclick=()=>$('login-button').click();return;}

@@ -28,11 +28,54 @@ test('catalog browse, plan, log, duplicate prevention and rank placement work to
   a.A.setView('explore');assert.equal(a.doc.querySelector(card+' [data-catalog-action="log"]'),null);a.click(card+' [data-catalog-action="rank"]');a.click('#move-first');assert.equal(a.state().rides[0].ranked,true);
 });
 test('manual catalog autofill saves metadata and personal notes',t=>{
-  const a=app(t);a.click('#add-button');a.input('add-catalog-search','Steel Vengeance');a.click('[data-autofill]');a.input('field-notes','Back row 🎢');a.submit('ride-form');
+  const a=app(t);a.click('[data-view="all"]');a.click('#add-button');a.input('add-catalog-search','Steel Vengeance');a.click('[data-autofill]');a.input('field-notes','Back row 🎢');a.submit('ride-form');
   const ride=a.state().rides[0];assert.equal(ride.park,'Cedar Point');assert.equal(ride.type,'Hybrid');assert(ride.rcdb);assert(ride.catalogId);assert.equal(ride.notes,'Back row 🎢');assert.match(ride.source,/coasterpedia.net/);assert.equal(ride.license,'CC-BY-SA-4.0');
 });
+
+test('ride wishes never create park wishes, and both wish lists can be removed independently',t=>{
+  const a=app(t);a.A.setView('explore');a.input('catalog-search','Steel Vengeance');a.click('[data-catalog-mode="rides"]');a.input('catalog-search','Steel Vengeance');a.click('[data-catalog-action="plan"]');
+  assert.equal(a.state().wishlist.length,1);assert.equal(a.state().parkWishlist.length,0);assert.equal(a.state().rides.length,0);
+  a.A.setView('wishlist');assert.equal(a.doc.querySelectorAll('#wishlist-panel .catalog-ride').length,1);
+  a.click('[data-wish-view="parks"]');assert.equal(a.doc.querySelectorAll('#wishlist-panel .park-card').length,0);
+  a.click('#add-button');a.input('wish-picker-search','Cedar Point');a.click('[data-wish-picker-add]');
+  assert.equal(a.state().parkWishlist.length,1);assert.equal(a.state().wishlist.length,1);assert.equal(a.state().rides.length,0);
+  a.click('#modal [data-close]');a.click('[data-park-remove]');assert.equal(a.state().parkWishlist.length,0);assert.equal(a.state().wishlist.length,1);
+  a.click('#undo-button');assert.equal(a.state().parkWishlist.length,1);
+  a.click('[data-wish-view="rides"]');a.click('#wishlist-panel [data-catalog-action="remove"]');assert.equal(a.state().wishlist.length,0);assert.equal(a.state().parkWishlist.length,1);
+});
+
+test('wish list header opens a searchable paginated catalog picker that saves wishes without credits',t=>{
+  const a=app(t);a.A.setView('wishlist');assert.equal(a.doc.getElementById('add-button').textContent,'Wish List a Park/Ride');a.click('#add-button');
+  assert.equal(a.doc.getElementById('ride-form'),null);assert.equal(a.doc.querySelectorAll('[data-wish-picker-add]').length,20);
+  const initial=a.doc.querySelector('[data-wish-picker-add]').dataset.wishPickerAdd;a.click('#wish-picker-next');assert.notEqual(a.doc.querySelector('[data-wish-picker-add]').dataset.wishPickerAdd,initial);
+  a.click('[data-wish-picker-mode="rides"]');a.input('wish-picker-search','Steel Vengeance');const button=a.doc.querySelector('[data-wish-picker-add]');assert(button);button.click();
+  assert.equal(a.state().rides.length,0);assert.equal(a.state().parkWishlist.length,0);assert.equal(a.state().wishlist.length,1);assert.equal(a.state().wishlist[0].name,'Steel Vengeance');assert(a.state().wishlist[0].rcdb);
+  assert.equal(a.doc.querySelector('[data-wish-picker-add]').disabled,true);a.doc.querySelector('[data-wish-picker-add]').click();assert.equal(a.state().wishlist.length,1);
+  a.input('wish-picker-search','<img src=x onerror=alert(1)>');assert.equal(a.doc.querySelector('#wish-picker-results img'),null);assert.match(a.doc.getElementById('wish-picker-results').textContent,/No matches/);
+  a.click('#modal [data-close]');assert.equal(a.doc.getElementById('wishlist-count').textContent,'1');assert.equal(a.doc.querySelectorAll('#wishlist-panel .catalog-ride').length,1);
+  a.click('[data-catalog-action="log"]');assert.equal(a.state().rides.length,1);assert.equal(a.state().wishlist.length,0);assert.equal(a.state().parkWishlist.length,0);
+});
+
+test('credit entry is limited to Credits and ranking notes and empty states navigate there',t=>{
+  const a=app(t);
+  for(const view of ['ranked','unranked','explore','social','statistics']){
+    a.A.setView(view);assert.equal(a.doc.getElementById('add-button').hidden,true,view);
+    assert.equal(a.doc.getElementById('credit-entry-note').hidden,!['ranked','unranked'].includes(view));
+    a.click('#add-button');assert.equal(a.doc.getElementById('ride-form'),null);
+  }
+  a.A.setView('ranked');a.click('#credit-entry-note [data-view="all"]');assert.equal(a.A.getView(),'all');
+  assert.equal(a.doc.getElementById('page-title').textContent,'Credits.');assert.equal(a.doc.getElementById('add-button').hidden,false);assert.equal(a.doc.getElementById('add-button').textContent,'Add a ride');
+  a.click('#add-button');assert(a.doc.getElementById('ride-form'));a.click('#modal [data-close]');
+  a.A.setView('unranked');assert.equal(a.doc.querySelector('[data-action="add"]'),null);a.click('[data-action="credits"]');assert.equal(a.A.getView(),'all');
+});
+
+test('legacy ride wishes without catalog metadata remain searchable, removable and undoable',t=>{
+  const a=app(t);a.A.change({wishlist:[C.ride({name:'Custom wish',park:'Unlisted park',notes:'Keep me'})]},'');a.A.setView('wishlist');a.click('[data-wish-view="rides"]');
+  a.input('wish-search','Custom');assert.match(a.doc.querySelector('#wishlist-panel .catalog-ride').textContent,/Custom wish/);
+  a.click('[data-catalog-action="remove"]');assert.equal(a.state().wishlist.length,0);a.click('#undo-button');assert.equal(a.state().wishlist[0].notes,'Keep me');assert.equal(a.state().parkWishlist.length,0);
+});
 test('storage access blocked by the browser still allows editing and recovery UI',t=>{
-  const a=app(t,{denyStorage:true});a.click('#add-button');a.input('field-name','Unsaved credit');a.submit('ride-form');assert.equal(a.A.getState().rides[0].name,'Unsaved credit');assert.equal(a.doc.getElementById('storage-warning').hidden,false);
+  const a=app(t,{denyStorage:true});a.click('[data-view="all"]');a.click('#add-button');a.input('field-name','Unsaved credit');a.submit('ride-form');assert.equal(a.A.getState().rides[0].name,'Unsaved credit');assert.equal(a.doc.getElementById('storage-warning').hidden,false);
   a.click('#backup-button');a.click('#open-recovery');assert.match(a.doc.getElementById('modal-content').textContent,/No checkpoints/);
 });
 test('first sign-in carries personal rides from a sample collection without demonstration rides',t=>{
