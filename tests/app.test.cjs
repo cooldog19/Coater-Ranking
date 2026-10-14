@@ -69,6 +69,44 @@ test('bulk add, search, unranked inbox and empty search results are functional',
   a.fill('search','Second Park');a.doc.getElementById('search').dispatchEvent(new a.w.Event('input'));assert.deepEqual(a.names(),['Beta']);
   a.fill('search','no match');a.doc.getElementById('search').dispatchEvent(new a.w.Event('input'));assert.equal(a.doc.querySelector('.empty-state h2').textContent,'No rides found.');a.click('[data-action="clear-search"]');assert.equal(a.names().length,2);
 });
+
+test('Credits defaults to alphabetical display without altering saved or exported rankings',async t=>{
+  const a=app(t,{saved:{version:2,rides:[{id:'z',name:'Zulu',park:'Park Z',ranked:true},{id:'b',name:'beta',park:'Park A',ranked:true},{id:'a',name:'Alpha',park:'Park Z',ranked:true},{id:'n',name:'New ride',park:'Park A',ranked:false}]}});
+  const saved=a.w.TracklistApp.getState();let changes=0;a.doc.addEventListener('tracklist:change',()=>changes++);
+  assert.deepEqual(a.names(),['Zulu','beta','Alpha']);assert.equal(a.doc.getElementById('credits-view-control').hidden,true);
+  a.click('[data-view="all"]');assert.deepEqual(a.names(),['Alpha','beta','New ride','Zulu']);assert.equal(a.doc.getElementById('credits-view').value,'name');
+  assert.equal(a.doc.getElementById('credits-view-control').hidden,false);assert.equal(a.doc.querySelector('.drag-handle'),null);assert.equal(a.doc.getElementById('reorder-hint').hidden,true);
+  a.fill('credits-view','park');a.doc.getElementById('credits-view').dispatchEvent(new a.w.Event('change'));assert.deepEqual(a.names(),['beta','New ride','Alpha','Zulu']);
+  assert.deepEqual(a.w.TracklistApp.getState(),saved);assert.equal(changes,0);assert.equal(a.doc.getElementById('undo-button').disabled,true);
+  a.click('#export-top');const text=await new Promise(resolve=>{const reader=new a.w.FileReader();reader.onload=()=>resolve(reader.result);reader.readAsText(a.downloads[0]);});
+  assert.deepEqual(C.importText(text).rides.map(r=>r.name),['Zulu','beta','Alpha','New ride']);
+  a.click('[data-view="ranked"]');assert.deepEqual(a.names(),['Zulu','beta','Alpha']);assert.equal(a.doc.querySelectorAll('.drag-handle').length,3);assert.equal(a.doc.querySelector('.credits-park-group'),null);
+  const reload=app(t,{saved:a.saved()});reload.click('[data-view="all"]');assert.equal(reload.doc.getElementById('credits-view').value,'name');
+});
+
+test('park groups include all credit tracks, alphabetize rides, escape headings and respond to search',t=>{
+  const a=app(t,{saved:{version:2,rides:[
+    {id:'ten',name:'Ride 10',park:'Park A',country:'United States',ranked:true,tracks:[{id:'left',name:'Left',ridden:true},{id:'right',name:'Right',ridden:true}]},
+    {id:'two',name:'Ride 2',park:'Park A',country:'United States',ranked:false},
+    {id:'other',name:'Another ride',park:'Park Z <img src=x onerror=alert(1)>',ranked:true},
+    {id:'missing',name:'First alphabetically',ranked:false}
+  ]}});
+  a.click('[data-view="all"]');a.fill('credits-view','park');a.doc.getElementById('credits-view').dispatchEvent(new a.w.Event('change'));
+  const groups=a.doc.querySelectorAll('.credits-park-group');assert.equal(groups.length,3);
+  assert.deepEqual([...groups[0].querySelectorAll('.ride-title')].map(n=>n.textContent),['Ride 2','Ride 10']);assert.match(groups[0].querySelector('.credits-park-heading').textContent,/2 rides · 3 credits/);
+  assert.equal(groups[0].querySelectorAll('.ride-track-details div').length,2);assert.equal(groups[2].querySelector('h2').textContent,'Park not listed');assert.equal(a.doc.querySelector('#ride-list img'),null);
+  a.fill('search','Ride 10');a.doc.getElementById('search').dispatchEvent(new a.w.Event('input'));assert.equal(a.doc.querySelectorAll('.credits-park-group').length,1);assert.match(a.doc.querySelector('.credits-park-heading').textContent,/1 ride · 2 credits/);
+  a.fill('search','Not found');a.doc.getElementById('search').dispatchEvent(new a.w.Event('input'));assert.equal(a.doc.querySelector('.credits-park-group'),null);assert.match(a.doc.querySelector('.empty-state').textContent,/No rides found/);
+});
+
+test('shift selection in grouped Credits follows displayed rows and preserves actual rank numbers',t=>{
+  const a=app(t,{saved:{version:2,rides:[{id:'z',name:'Zulu',park:'Park B',ranked:true},{id:'a',name:'Alpha',park:'Park A',ranked:true},{id:'b',name:'Beta',park:'Park A',ranked:false}]}});
+  a.click('[data-view="all"]');a.fill('credits-view','park');a.doc.getElementById('credits-view').dispatchEvent(new a.w.Event('change'));
+  const rows=a.doc.querySelectorAll('.ride-row');assert.equal(rows[0].querySelector('.rank-button').textContent,'2');assert.equal(rows[2].querySelector('.rank-button').textContent,'1');
+  rows[0].querySelector('.ride-select').click();rows[2].querySelector('.ride-select').dispatchEvent(new a.w.MouseEvent('click',{bubbles:true,shiftKey:true}));
+  assert.equal(a.doc.getElementById('selection-count').textContent,'3 selected');assert.equal(a.doc.getElementById('select-all').checked,true);
+  a.fill('credits-view','name');a.doc.getElementById('credits-view').dispatchEvent(new a.w.Event('change'));assert.equal(a.doc.getElementById('bulk-toolbar').hidden,true);
+});
 test('invalid POV input displays an error without altering saved data',t=>{
   const a=app(t);const before=a.saved();a.click('.ride-row [data-action="edit"]');a.fill('field-pov','https://example.com/video');a.submit('ride-form');
   assert.equal(a.doc.getElementById('form-error').hidden,false);assert.deepEqual(a.saved(),before);
