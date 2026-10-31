@@ -91,7 +91,7 @@
   document.addEventListener('tracklist:wish-picker',wishPicker);
   function logRecord(record){
     const state=A.getState();if(state.rides.some(r=>!r.demoRide&&K.same(r,record))){A.toast('This ride is already in your credits.',false);return;}
-    if(C.trackFamily(record)){A.addFromCatalog(record);return;}
+    if(C.trackFamily(record)||record.tracks?.length){A.addFromCatalog(record);return;}
     const wish=state.wishlist.find(r=>K.same(r,record));
     const ride=C.ride({...K.fromRecord(record,C),notes:wish?.notes||'',riddenOn:date(),ranked:false});
     if(A.change({rides:[...state.rides.filter(r=>!(r.demoRide&&K.same(r,record))),ride],wishlist:state.wishlist.filter(r=>!K.same(r,record))},`${ride.name} logged. Find it in Unranked.`))A.offerRanking([ride.id]);
