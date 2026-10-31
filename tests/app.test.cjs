@@ -48,11 +48,11 @@ test('keyboard moves and pointer drag update the ranking and support cancellatio
   assert.deepEqual(a.names().slice(0,3),['VelociCoaster','Fury 325','Steel Vengeance']);
 });
 test('bulk selection moves rides together; unranking and ranking from the inbox work',t=>{
-  const a=app(t);const checks=a.doc.querySelectorAll('.ride-select');checks[1].click();checks[3].click();
+  const a=app(t);a.click('#select-multiple');const checks=a.doc.querySelectorAll('.ride-select');checks[1].click();checks[3].click();
   assert.equal(a.doc.getElementById('selection-count').textContent,'2 selected');
   a.fill('bulk-rank','1');a.click('#bulk-move');assert.deepEqual(a.names().slice(0,2),['VelociCoaster','Iron Gwazi']);
-  a.click('.ride-select');a.click('#bulk-unrank');a.click('.list-tabs [data-view="unranked"]');
-  assert(a.names().includes('VelociCoaster'));a.click('.ride-row:first-child .rank-button');a.click('#move-first');a.click('.list-tabs [data-view="ranked"]');
+  a.click('.ride-select');a.click('#bulk-unrank');a.click('.sidebar [data-view="unranked"]');
+  assert(a.names().includes('VelociCoaster'));a.click('.ride-row:first-child .rank-button');a.click('#move-first');a.click('.sidebar [data-view="ranked"]');
   assert.equal(a.names()[0],'VelociCoaster');
 });
 test('adding and editing personal rides preserves notes; clearing samples keeps personal additions',t=>{
@@ -102,10 +102,29 @@ test('park groups include all credit tracks, alphabetize rides, escape headings 
 test('shift selection in grouped Credits follows displayed rows and preserves actual rank numbers',t=>{
   const a=app(t,{saved:{version:2,rides:[{id:'z',name:'Zulu',park:'Park B',ranked:true},{id:'a',name:'Alpha',park:'Park A',ranked:true},{id:'b',name:'Beta',park:'Park A',ranked:false}]}});
   a.click('[data-view="all"]');a.fill('credits-view','park');a.doc.getElementById('credits-view').dispatchEvent(new a.w.Event('change'));
-  const rows=a.doc.querySelectorAll('.ride-row');assert.equal(rows[0].querySelector('.rank-button').textContent,'2');assert.equal(rows[2].querySelector('.rank-button').textContent,'1');
+  a.click('#select-multiple');const rows=a.doc.querySelectorAll('.ride-row');assert.equal(rows[0].querySelector('.rank-button').textContent,'2');assert.equal(rows[2].querySelector('.rank-button').textContent,'1');
   rows[0].querySelector('.ride-select').click();rows[2].querySelector('.ride-select').dispatchEvent(new a.w.MouseEvent('click',{bubbles:true,shiftKey:true}));
   assert.equal(a.doc.getElementById('selection-count').textContent,'3 selected');assert.equal(a.doc.getElementById('select-all').checked,true);
   a.fill('credits-view','name');a.doc.getElementById('credits-view').dispatchEvent(new a.w.Event('change'));assert.equal(a.doc.getElementById('bulk-toolbar').hidden,true);
+});
+
+test('Select multiple reveals selection controls and leaving the mode or page clears selection',t=>{
+  const a=app(t);assert.equal(a.doc.querySelector('.list-toolbar [data-view]'),null);
+  assert.equal(a.doc.getElementById('select-all').hidden,true);assert([...a.doc.querySelectorAll('.ride-select')].every(c=>c.hidden&&c.disabled));
+  a.click('#select-multiple');assert.equal(a.doc.getElementById('select-multiple').getAttribute('aria-pressed'),'true');assert([...a.doc.querySelectorAll('.ride-select')].every(c=>!c.hidden&&!c.disabled));
+  a.click('#select-all');assert.equal(a.doc.getElementById('selection-count').textContent,'10 selected');a.click('#select-multiple');assert.equal(a.doc.getElementById('bulk-toolbar').hidden,true);assert.equal(a.doc.getElementById('select-all').hidden,true);
+  a.click('#select-multiple');a.click('.ride-select');a.click('.sidebar [data-view="all"]');assert.equal(a.doc.getElementById('select-multiple').getAttribute('aria-pressed'),'false');assert.equal(a.doc.getElementById('bulk-toolbar').hidden,true);
+});
+
+test('Credits filters combine with search and park grouping without affecting saved ranking order',t=>{
+  const a=app(t,{saved:{version:2,rides:[{id:'a',name:'Alpha',park:'One',type:'Steel',manufacturer:'B&M',ranked:true},{id:'b',name:'Beta',park:'Two',type:'Wooden',manufacturer:'B&M',ranked:true},{id:'g',name:'Gamma',park:'One',type:'Steel',manufacturer:'Intamin',ranked:false},{id:'u',name:'Unknown',park:'Three',type:'Other',ranked:true}]}});
+  const before=a.saved(),change=(id,value)=>{a.fill(id,value);a.doc.getElementById(id).dispatchEvent(new a.w.Event('change'));};
+  a.click('.sidebar [data-view="all"]');change('credits-type','Steel');assert.deepEqual(a.names(),['Alpha','Gamma']);change('credits-manufacturer',JSON.stringify('B&M'));assert.deepEqual(a.names(),['Alpha']);
+  change('credits-view','park');assert.equal(a.doc.querySelectorAll('.credits-park-group').length,1);assert.match(a.doc.querySelector('.credits-park-heading').textContent,/One/);
+  a.fill('search','Gamma');a.doc.getElementById('search').dispatchEvent(new a.w.Event('input'));assert.match(a.doc.querySelector('.empty-state').textContent,/No credits match/);a.click('[data-action="clear-filters"]');assert.equal(a.names().length,4);
+  change('credits-manufacturer',JSON.stringify(''));assert.deepEqual(a.names(),['Unknown']);assert.deepEqual(a.saved(),before);
+  a.click('.sidebar [data-view="ranked"]');assert.deepEqual(a.names(),['Alpha','Beta','Unknown']);assert.equal(a.doc.getElementById('credits-filters').hidden,true);
+  a.w.localStorage.setItem(KEY+'.different',JSON.stringify({version:2,rides:[]}));a.w.TracklistApp.switchAccount('different');a.click('.sidebar [data-view="all"]');assert.equal(a.doc.getElementById('credits-manufacturer').value,'');assert.equal(a.doc.getElementById('credits-type').value,'');assert(!a.doc.getElementById('credits-manufacturer').textContent.includes('B&M'));
 });
 test('invalid POV input displays an error without altering saved data',t=>{
   const a=app(t);const before=a.saved();a.click('.ride-row [data-action="edit"]');a.fill('field-pov','https://example.com/video');a.submit('ride-form');

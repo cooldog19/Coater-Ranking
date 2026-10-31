@@ -117,10 +117,26 @@ test('stale ranking changes and corrupt sessions cannot apply outdated compariso
 });
 test('new rides can be added directly to the quiz, including batch additions',t=>{
   const a=app(t,[ride('a'),ride('b')]);a.click('[data-view="all"]');a.click('#add-button');a.d.getElementById('field-name').value='New ride';
-  a.click('#add-compare');assert.equal(a.state().rides.find(r=>r.name==='New ride').ranked,false);assert(a.d.getElementById('comparison-session'));
+  a.click('#save-new-credit');a.click('#new-rank-now');assert.equal(a.state().rides.find(r=>r.name==='New ride').ranked,false);assert(a.d.getElementById('comparison-session'));
   place(a,1);assert.deepEqual(a.state().rides.filter(r=>r.ranked).map(r=>r.name),['a','New ride','b']);
-  a.click('#comparison-done');a.click('[data-view="all"]');a.click('#add-button');a.click('#multiple-tab');a.d.getElementById('field-names').value='One | Park\nTwo | Park';a.click('#add-compare');
+  a.click('#comparison-done');a.click('[data-view="all"]');a.click('#add-button');a.click('#multiple-tab');a.d.getElementById('field-names').value='One | Park\nTwo | Park';a.click('#save-new-credit');a.click('#new-rank-now');
   assert.equal(a.session().queue.length,2);assert(a.state().rides.slice(-2).every(r=>!r.ranked));
+});
+
+test('Do later and dismissing the ranking offer leave new catalog credits saved and unranked',t=>{
+  const a=app(t,[ride('a'),ride('b')],{features:true});a.click('[data-view="all"]');a.click('#add-button');
+  const input=a.d.getElementById('add-catalog-search');input.value='Steel Vengeance';input.dispatchEvent(new a.w.Event('input'));a.click('[data-autofill]');a.click('#save-new-credit');
+  assert(a.d.getElementById('new-rank-now'));assert.equal(a.session(),null);assert.deepEqual(a.ranked(),['a','b']);assert.equal(a.state().rides.find(r=>r.name==='Steel Vengeance').ranked,false);
+  a.click('#new-rank-later');assert.equal(a.d.getElementById('modal').open,false);assert.equal(a.session(),null);a.click('[data-view="unranked"]');assert.equal(a.d.querySelector('.ride-title').textContent,'Steel Vengeance');
+  a.click('[data-view="all"]');a.click('#add-button');a.click('#add-manually');a.d.getElementById('field-name').value='Another credit';a.click('#save-new-credit');a.click('#modal [data-close]');
+  assert.equal(a.state().rides.find(r=>r.name==='Another credit').ranked,false);assert.deepEqual(a.ranked(),['a','b']);
+});
+
+test('catalog logging offers the ranking quiz and Rank now places the new ride through comparisons',t=>{
+  const a=app(t,[ride('a'),ride('b')],{features:true});a.click('[data-view="explore"]');a.click('[data-catalog-mode="rides"]');
+  const input=a.d.getElementById('catalog-search');input.value='Steel Vengeance';input.dispatchEvent(new a.w.Event('input'));a.click('[data-catalog-action="log"]');
+  assert(a.d.getElementById('new-rank-now'));assert.equal(a.state().rides.at(-1).ranked,false);assert.equal(a.session(),null);
+  const added=a.state().rides.at(-1).id;a.click('#new-rank-now');assert.deepEqual(a.session().queue,[added]);place(a,0);assert.equal(a.ranked()[0],added);
 });
 test('keyboard answers, escaped ride text, and failed quiz storage remain usable',t=>{
   const a=app(t,[ride('a',true,{name:'<img src=x onerror=alert(1)>',notes:'<script>bad</script>'}),ride('b'),ride('x',false)],{quota:true});

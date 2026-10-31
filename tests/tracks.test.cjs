@@ -56,7 +56,7 @@ function app(t,state){const dom=new JSDOM(fs.readFileSync(path.join(root,'index.
 
 test('catalog logging opens track choices; both tracks save as two credits and one ranked ride',t=>{
   const a=app(t);a.A.setView('explore');a.input('catalog-search','Stardust Racers');a.d.getElementById('catalog-search').dispatchEvent(new a.w.Event('input'));a.click('[data-catalog-mode="rides"]');a.input('catalog-search','Stardust Racers');a.d.getElementById('catalog-search').dispatchEvent(new a.w.Event('input'));a.click('[data-catalog-action="log"]');
-  assert.equal(a.d.getElementById('multi-track').checked,true);a.d.querySelector('[name="track-ridden-0"]').checked=true;a.d.querySelector('[name="track-ridden-1"]').checked=true;a.d.querySelector('[name="preferredTrack"]').value='yellow';a.d.querySelector('[name="ranked"]').checked=true;a.submit('ride-form');
+  assert.equal(a.d.getElementById('multi-track').checked,true);a.d.querySelector('[name="track-ridden-0"]').checked=true;a.d.querySelector('[name="track-ridden-1"]').checked=true;a.d.querySelector('[name="preferredTrack"]').value='yellow';a.submit('ride-form');assert.equal(a.A.getState().rides[0].ranked,false);a.click('#new-rank-now');
   a.A.setView('ranked');assert.equal(a.d.querySelectorAll('.ride-row').length,1);assert.equal(a.d.getElementById('stat-total').textContent,'2');assert.match(a.d.querySelector('.ride-track-summary').textContent,/Favorite: Yellow/);
   a.A.setView('all');assert.equal(a.d.querySelectorAll('.ride-track-details div').length,2);assert.match(a.d.getElementById('list-summary').textContent,/2 credits/);
   a.w.TracklistQuiz.start({mode:'full'});assert.equal(a.A.getState().rides.length,1);assert.equal(a.d.getElementById('stat-total').textContent,'2');

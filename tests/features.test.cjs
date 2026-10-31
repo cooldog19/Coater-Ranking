@@ -28,8 +28,25 @@ test('catalog browse, plan, log, duplicate prevention and rank placement work to
   a.A.setView('explore');assert.equal(a.doc.querySelector(card+' [data-catalog-action="log"]'),null);a.click(card+' [data-catalog-action="rank"]');a.click('#move-first');assert.equal(a.state().rides[0].ranked,true);
 });
 test('manual catalog autofill saves metadata and personal notes',t=>{
-  const a=app(t);a.click('[data-view="all"]');a.click('#add-button');a.input('add-catalog-search','Steel Vengeance');a.click('[data-autofill]');a.input('field-notes','Back row 🎢');a.submit('ride-form');
+  const a=app(t);a.click('[data-view="all"]');a.click('#add-button');a.input('add-catalog-search','Steel Vengeance');a.click('[data-autofill]');a.click('#add-manually');a.input('field-notes','Back row 🎢');a.submit('ride-form');
   const ride=a.state().rides[0];assert.equal(ride.park,'Cedar Point');assert.equal(ride.type,'Hybrid');assert(ride.rcdb);assert(ride.catalogId);assert.equal(ride.notes,'Back row 🎢');assert.match(ride.source,/coasterpedia.net/);assert.equal(ride.license,'CC-BY-SA-4.0');
+});
+
+test('new credit entry begins with catalog search and manual details expand only on request',t=>{
+  const a=app(t);a.click('[data-view="all"]');a.click('#add-button');
+  assert.equal(a.doc.activeElement.id,'add-catalog-search');assert.equal(a.doc.getElementById('manual-ride-fields').hidden,true);assert.equal(a.doc.getElementById('manual-ride-fields').disabled,true);
+  assert.equal(a.doc.querySelector('#ride-form [name="ranked"]'),null);a.click('#save-new-credit');assert.match(a.doc.getElementById('form-error').textContent,/Choose a ride/);assert.equal(a.state().rides.length,0);
+  a.input('add-catalog-search','missing unique catalog ride');assert.match(a.doc.getElementById('add-catalog-results').textContent,/Add manually/);
+  a.click('#add-manually');assert.equal(a.doc.getElementById('manual-ride-fields').hidden,false);assert.equal(a.doc.getElementById('manual-ride-fields').disabled,false);assert.equal(a.doc.activeElement.id,'field-name');
+  a.input('field-name','My custom coaster');a.input('field-park','My park');a.click('#add-manually');assert.equal(a.doc.getElementById('manual-ride-fields').hidden,true);a.click('#save-new-credit');assert.equal(a.state().rides.length,1);assert.equal(a.state().rides[0].ranked,false);
+});
+
+test('a catalog choice saves collapsed ride details, prevents duplicate credits and removes only its ride wish',t=>{
+  const a=app(t);const record=a.w.TRACKLIST_CATALOG.rides.find(r=>r.name==='Steel Vengeance'&&r.park==='Cedar Point');
+  a.A.change({wishlist:[K.fromRecord(record,C)],parkWishlist:[{id:'cedarpoint',name:'Cedar Point'}]},'');a.A.setView('all');a.click('#add-button');
+  a.input('add-catalog-search','Steel Vengeance');a.click('[data-autofill]');assert.equal(a.doc.getElementById('manual-ride-fields').hidden,true);assert.equal(a.doc.getElementById('manual-ride-fields').disabled,false);
+  assert.match(a.doc.getElementById('selected-catalog-ride').textContent,/Steel Vengeance/);a.click('#save-new-credit');assert.equal(a.state().rides[0].ranked,false);assert.equal(a.state().wishlist.length,0);assert.equal(a.state().parkWishlist.length,1);
+  a.click('#add-button');a.input('add-catalog-search','Steel Vengeance');a.click('[data-autofill]');a.click('#save-new-credit');assert.equal(a.state().rides.length,1);assert.match(a.doc.getElementById('form-error').textContent,/already in Credits/);
 });
 
 test('ride wishes never create park wishes, and both wish lists can be removed independently',t=>{
@@ -75,7 +92,7 @@ test('legacy ride wishes without catalog metadata remain searchable, removable a
   a.click('[data-catalog-action="remove"]');assert.equal(a.state().wishlist.length,0);a.click('#undo-button');assert.equal(a.state().wishlist[0].notes,'Keep me');assert.equal(a.state().parkWishlist.length,0);
 });
 test('storage access blocked by the browser still allows editing and recovery UI',t=>{
-  const a=app(t,{denyStorage:true});a.click('[data-view="all"]');a.click('#add-button');a.input('field-name','Unsaved credit');a.submit('ride-form');assert.equal(a.A.getState().rides[0].name,'Unsaved credit');assert.equal(a.doc.getElementById('storage-warning').hidden,false);
+  const a=app(t,{denyStorage:true});a.click('[data-view="all"]');a.click('#add-button');a.click('#add-manually');a.input('field-name','Unsaved credit');a.submit('ride-form');assert.equal(a.A.getState().rides[0].name,'Unsaved credit');assert.equal(a.doc.getElementById('storage-warning').hidden,false);
   a.click('#backup-button');a.click('#open-recovery');assert.match(a.doc.getElementById('modal-content').textContent,/No checkpoints/);
 });
 test('first sign-in carries personal rides from a sample collection without demonstration rides',t=>{

@@ -91,10 +91,10 @@
   document.addEventListener('tracklist:wish-picker',wishPicker);
   function logRecord(record){
     const state=A.getState();if(state.rides.some(r=>!r.demoRide&&K.same(r,record))){A.toast('This ride is already in your credits.',false);return;}
+    if(C.trackFamily(record)){A.addFromCatalog(record);return;}
     const wish=state.wishlist.find(r=>K.same(r,record));
     const ride=C.ride({...K.fromRecord(record,C),notes:wish?.notes||'',riddenOn:date(),ranked:false});
-    A.change({rides:[...state.rides.filter(r=>!(r.demoRide&&K.same(r,record))),ride],wishlist:state.wishlist.filter(r=>!K.same(r,record))},`${ride.name} logged. Find it in Unranked.`);
-    if(ride.tracks&&credited(record))A.editModal(credited(record).id);
+    if(A.change({rides:[...state.rides.filter(r=>!(r.demoRide&&K.same(r,record))),ride],wishlist:state.wishlist.filter(r=>!K.same(r,record))},`${ride.name} logged. Find it in Unranked.`))A.offerRanking([ride.id]);
   }
   for(const panel of ['explore-panel','wishlist-panel'])$(panel).addEventListener('click',event=>{
     const save=event.target.closest('[data-park-save]');if(save){const p=allParks.find(x=>x.id===save.dataset.parkSave);if(p&&!savedPark(p.id))A.change({parkWishlist:[...A.getState().parkWishlist,{id:p.id,name:p.name,country:p.country}]},p.name+' added to your wish list.');return;}
@@ -115,20 +115,6 @@
     else if(action.dataset.catalogAction==='remove')A.change({wishlist:state.wishlist.filter(r=>!K.same(r,record))},'Ride removed from your wish list.');
   });
   document.addEventListener('tracklist:render',()=>{catalogState=null;renderCatalog();renderWishlist();});
-  document.addEventListener('tracklist:add-form',event=>{
-    if(event.detail.multiple)return;
-    const form=$('ride-form');form.insertAdjacentHTML('afterbegin','<div class="catalog-autofill"><label class="field"><span>Find in the ride catalog</span><input type="search" id="add-catalog-search" placeholder="Search a ride or park to fill its details…"></label><div id="add-catalog-results"></div></div>');
-    $('add-catalog-search').oninput=event=>{
-      const q=K.fold(event.target.value),matches=q.length>=2?records.filter(r=>K.fold(`${r.name} ${(r.aliases||[]).join(' ')} ${r.park}`).includes(q)).slice(0,8):[];
-      $('add-catalog-results').innerHTML=matches.map(r=>`<button class="autofill-result" type="button" data-autofill="${e(r.id)}"><strong>${e(r.name)}</strong><span>${e(r.park)}</span></button>`).join('');
-    };
-    $('add-catalog-results').onclick=event=>{
-      const button=event.target.closest('[data-autofill]');if(!button)return;const record=records.find(r=>r.id===button.dataset.autofill);
-      for(const field of ['name','park','country','manufacturer','type','pov','rcdb'])if($('field-'+field))$('field-'+field).value=record[field]||'';
-      form.dataset.catalogId=record.id;$('add-catalog-results').innerHTML='';$('add-catalog-search').value=record.name;
-      A.mountTrackFields(C.ride({...record,ranked:false}));
-    };
-  });
   function migrationModal(){
     A.openModal(`${A.modalHeader('Import credits', 'Paste a ride table or choose a saved file.')}<div class="modal-body"><div class="help-copy"><p>Paste a ride table, enter lines as Ride | Park, or choose a saved HTML, CSV, or TSV file.</p><p>Only use a list of rides you have ridden. We’ll match catalog records where names and parks agree, and let you review unmatched or ambiguous entries. Imported credits start unranked.</p></div><form id="migration-form"><label class="field"><span>Your copied ride table or ride names</span><textarea id="migration-text" rows="7" placeholder="Ride name [tab] Park name\nOr: Ride name | Park name"></textarea></label><p><label class="button file-label" for="migration-file">Choose saved HTML, CSV or text</label><input class="sr-only" id="migration-file" type="file" accept=".html,.htm,.csv,.tsv,.txt"></p><p id="migration-error" class="form-error" hidden role="alert"></p></form></div><div class="modal-actions"><button class="button quiet" data-close>Cancel</button><button class="button primary" type="submit" form="migration-form">Review credits</button></div>`);
     $('migration-form').onsubmit=event=>{event.preventDefault();try{migrationRows=TracklistMigration.parse($('migration-text').value,C,K,DOMParser);migrationReview();}catch(error){$('migration-error').hidden=false;$('migration-error').textContent=error.message;}};
