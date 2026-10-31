@@ -1,7 +1,8 @@
 {
   "schemaVersion": 1,
-  "initialized": false,
+  "initialized": true,
   "view": "latest",
-  "cursor": null,
+  "cursor": "WyJjaGFuZ2VzIiwiMTVlOTA5OWU0OGFmNTVjYyIsMTExNTMwXQ",
+  "lastSuccessfulAt": "2026-10-31T16:33:58.425Z",
   "redirects": {}
 }
