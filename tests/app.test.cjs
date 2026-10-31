@@ -28,7 +28,7 @@ function app(t, {saved, quota = false} = {}) {
 }
 test('sample is usable immediately; exact movement, undo and reload preserve order', t=>{
   const a=app(t);assert.equal(a.names().length,10);assert.equal(a.doc.getElementById('stat-total').textContent,'12');
-  a.click('.ride-row:first-child .rank-button');a.fill('rank-input','10');a.submit('rank-form');
+  a.click('.ride-row:first-child .rank-button');assert(a.doc.getElementById('move-first'));assert(a.doc.getElementById('move-last'));a.fill('rank-input','10');a.submit('rank-form');
   assert.equal(a.names().at(-1),'Steel Vengeance');assert.equal(a.saved().rides[9].name,'Steel Vengeance');
   assert.equal(a.doc.getElementById('demo-banner').hidden,false);
   const b=app(t,{saved:a.saved()});assert.deepEqual(b.names(),a.names());
@@ -52,7 +52,7 @@ test('bulk selection moves rides together; unranking and ranking from the inbox 
   assert.equal(a.doc.getElementById('selection-count').textContent,'2 selected');
   a.fill('bulk-rank','1');a.click('#bulk-move');assert.deepEqual(a.names().slice(0,2),['VelociCoaster','Iron Gwazi']);
   a.click('.ride-select');a.click('#bulk-unrank');a.click('.sidebar [data-view="unranked"]');
-  assert(a.names().includes('VelociCoaster'));a.click('.ride-row:first-child .rank-button');a.click('#move-first');a.click('.sidebar [data-view="ranked"]');
+  assert(a.names().includes('VelociCoaster'));a.click('.ride-row:first-child .rank-button');assert.equal(a.doc.getElementById('move-first'),null);assert.equal(a.doc.getElementById('move-last'),null);a.fill('rank-input','1');a.submit('rank-form');a.click('.sidebar [data-view="ranked"]');
   assert.equal(a.names()[0],'VelociCoaster');
 });
 test('adding and editing personal rides preserves notes; clearing samples keeps personal additions',t=>{
