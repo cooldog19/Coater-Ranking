@@ -123,6 +123,18 @@ test('new rides can be added directly to the quiz, including batch additions',t=
   assert.equal(a.session().queue.length,2);assert(a.state().rides.slice(-2).every(r=>!r.ranked));
 });
 
+test('single-ride quiz completion highlights its saved rank and keeps Undo last ride working',t=>{
+  const a=app(t,[ride('a'),ride('b'),ride('c')]);a.w.TracklistQuiz.start({mode:'single',ids:['c']});place(a,1);
+  assert.equal(a.d.querySelector('.comparison-result > strong').textContent,'#2');assert.equal(a.d.querySelector('.comparison-result h3').textContent,'c');assert.match(a.d.querySelector('.comparison-result').textContent,/of 3 ranked rides/);
+  a.click('#comparison-undo-final');assert(a.d.getElementById('comparison-session'));place(a,0);assert.equal(a.d.querySelector('.comparison-result > strong').textContent,'#1');assert.equal(a.ranked()[0],'c');
+});
+
+test('batch completion reports final positions after later insertions rather than the number ranked',t=>{
+  const a=app(t,[ride('a'),ride('b'),ride('x',false,{name:'<img src=x onerror=alert(1)>'}),ride('y',false)]);a.w.TracklistQuiz.start();place(a,0);place(a,0);
+  const rows=[...a.d.querySelectorAll('.comparison-placements li')];assert.equal(rows.length,2);assert.deepEqual(rows.map(r=>r.querySelector('strong').textContent),['#1','#2']);assert.equal(rows[0].querySelector('span').textContent,'y');
+  assert.equal(rows[1].querySelector('span').textContent,'<img src=x onerror=alert(1)>');assert.equal(a.d.querySelector('#modal-content img'),null);assert.equal(a.d.querySelector('.comparison-result'),null);
+});
+
 test('Do later and dismissing the ranking offer leave new catalog credits saved and unranked',t=>{
   const a=app(t,[ride('a'),ride('b')],{features:true});a.click('[data-view="all"]');a.click('#add-button');
   const input=a.d.getElementById('add-catalog-search');input.value='Steel Vengeance';input.dispatchEvent(new a.w.Event('input'));a.click('[data-autofill]');a.click('#save-new-credit');

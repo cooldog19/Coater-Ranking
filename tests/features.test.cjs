@@ -25,7 +25,7 @@ test('catalog browse, plan, log, duplicate prevention and rank placement work to
   const record=a.w.TRACKLIST_CATALOG.rides.find(r=>r.name==='Steel Vengeance'&&r.park==='Cedar Point'),card=`[data-catalog-id="${record.id}"]`;
   assert(a.doc.querySelector(card+' a[href="'+record.rcdb+'"]'));a.click(card+' [data-catalog-action="plan"]');assert.equal(a.state().rides.length,0);assert.equal(a.state().wishlist.length,1);
   a.A.setView('wishlist');a.click('#wishlist-panel '+card+' [data-catalog-action="log"]');assert.equal(a.state().wishlist.length,0);assert.equal(a.state().rides.length,1);assert.equal(a.state().rides[0].ranked,false);assert.equal(a.state().rides[0].catalogId,record.id);assert.match(a.state().rides[0].riddenOn,/^\d{4}-\d{2}-\d{2}$/);
-  a.A.setView('explore');assert.equal(a.doc.querySelector(card+' [data-catalog-action="log"]'),null);a.click(card+' [data-catalog-action="rank"]');a.click('#move-first');assert.equal(a.state().rides[0].ranked,true);
+  a.A.setView('explore');assert.equal(a.doc.querySelector(card+' [data-catalog-action="log"]'),null);a.click(card+' [data-catalog-action="rank"]');a.doc.getElementById('rank-input').value='1';a.submit('rank-form');assert.equal(a.state().rides[0].ranked,true);
 });
 test('manual catalog autofill saves metadata and personal notes',t=>{
   const a=app(t);a.click('[data-view="all"]');a.click('#add-button');a.input('add-catalog-search','Steel Vengeance');a.click('[data-autofill]');a.click('#add-manually');a.input('field-notes','Back row 🎢');a.submit('ride-form');

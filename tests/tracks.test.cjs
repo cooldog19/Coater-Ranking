@@ -56,10 +56,22 @@ function app(t,state){const dom=new JSDOM(fs.readFileSync(path.join(root,'index.
 
 test('catalog logging opens track choices; both tracks save as two credits and one ranked ride',t=>{
   const a=app(t);a.A.setView('explore');a.input('catalog-search','Stardust Racers');a.d.getElementById('catalog-search').dispatchEvent(new a.w.Event('input'));a.click('[data-catalog-mode="rides"]');a.input('catalog-search','Stardust Racers');a.d.getElementById('catalog-search').dispatchEvent(new a.w.Event('input'));a.click('[data-catalog-action="log"]');
-  assert.equal(a.d.getElementById('multi-track').checked,true);a.d.querySelector('[name="track-ridden-0"]').checked=true;a.d.querySelector('[name="track-ridden-1"]').checked=true;a.d.querySelector('[name="preferredTrack"]').value='yellow';a.submit('ride-form');assert.equal(a.A.getState().rides[0].ranked,false);a.click('#new-rank-now');
+  assert.equal(a.d.getElementById('multi-track'),null);assert.equal(a.d.querySelectorAll('.auto-track-name').length,2);assert.equal(a.d.querySelector('[name="multi-track"]').type,'hidden');a.d.querySelector('[name="track-ridden-0"]').checked=true;a.d.querySelector('[name="track-ridden-1"]').checked=true;a.d.querySelector('[name="preferredTrack"]').value='yellow';a.submit('ride-form');assert.equal(a.A.getState().rides[0].ranked,false);a.click('#new-rank-now');
   a.A.setView('ranked');assert.equal(a.d.querySelectorAll('.ride-row').length,1);assert.equal(a.d.getElementById('stat-total').textContent,'2');assert.match(a.d.querySelector('.ride-track-summary').textContent,/Favorite: Yellow/);
   a.A.setView('all');assert.equal(a.d.querySelectorAll('.ride-track-details div').length,2);assert.match(a.d.getElementById('list-summary').textContent,/2 credits/);
   a.w.TracklistQuiz.start({mode:'full'});assert.equal(a.A.getState().rides.length,1);assert.equal(a.d.getElementById('stat-total').textContent,'2');
+});
+
+test('new credits show only supplied tracks and ordinary manual credits have no separate-tracks toggle',t=>{
+  const a=app(t);a.A.addFromCatalog({id:'test-dual',name:'Dual Ride',park:'Test Park',tracks:[{id:'red',name:'Red',ridden:false},{id:'blue',name:'Blue',ridden:false}]});
+  assert.equal(a.d.getElementById('multi-track'),null);assert.equal(a.d.getElementById('add-track'),null);assert.equal(a.d.querySelector('[data-remove-track]'),null);
+  assert.deepEqual([...a.d.querySelectorAll('.auto-track-name')].map(n=>n.textContent),['Red','Blue']);
+  a.d.querySelector('[name="track-ridden-0"]').checked=true;a.d.querySelector('[name="track-ridden-1"]').checked=true;a.submit('ride-form');a.click('#new-rank-later');
+  assert.equal(C.creditCount(a.A.getState().rides),2);assert.equal(a.A.getState().rides[0].tracks[1].name,'Blue');
+  a.A.setView('all');a.click('#add-button');a.click('#add-manually');assert.equal(a.d.querySelector('.track-editor'),null);assert.equal(a.d.getElementById('multi-track'),null);
+  a.input('field-name','Stardust Racers');a.input('field-park','Universal Epic Universe');a.d.getElementById('field-park').dispatchEvent(new a.w.Event('change'));assert.equal(a.d.querySelectorAll('.auto-track-name').length,2);
+  a.input('field-name','Ordinary ride');a.d.getElementById('field-name').dispatchEvent(new a.w.Event('change'));assert.equal(a.d.querySelector('.track-editor'),null);assert.equal(a.d.querySelector('[name="multi-track"]'),null);
+  a.submit('ride-form');assert.equal(a.A.getState().rides.find(r=>r.name==='Ordinary ride').tracks,undefined);
 });
 
 test('custom edit controls and combining existing entries preserve rank, metadata and undo',t=>{

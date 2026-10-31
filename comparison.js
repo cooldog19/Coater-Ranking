@@ -170,8 +170,14 @@
     session.index++; session.answers = [];
     if (session.index < session.queue.length) { persist(); render(); return; }
     const {placed,skipped} = session;
+    const ranked=A.getState().rides.filter(r=>r.ranked),placedIds=new Set(placed);
+    const results=ranked.map((ride,index)=>({ride,rank:index+1})).filter(({ride})=>placedIds.has(ride.id));
+    const result=results.length===1?results[0]:null;
+    const placements=result
+      ? `<div class="comparison-result"><span>Placed in your ranking</span><strong>#${result.rank}</strong><h3>${esc(result.ride.name)}</h3><p>of ${ranked.length} ranked ${ranked.length===1?'ride':'rides'}</p></div>`
+      : results.length?`<h3>Your placements</h3><ol class="comparison-placements">${results.map(({ride,rank})=>`<li><strong>#${rank}</strong><span>${esc(ride.name)}</span></li>`).join('')}</ol>`:'<p>No rides were ranked this time.</p>';
     session = null; persist();
-    A.openModal(`${A.modalHeader('Quiz complete')}<div class="modal-body comparison-body"><div class="comparison-result"><strong>${placed.length}</strong><p>${placed.length === 1 ? 'ride' : 'rides'} ranked${skipped.length ? ' · '+skipped.length+' skipped' : ''}.</p></div><p>${esc(notice)}</p><p>Your placements are saved with your collection. Skipped rides keep their previous ranking status.</p></div><div class="modal-actions">${lastPlacement ? '<button class="button quiet" id="comparison-undo-final">Undo last ride</button>' : ''}<button class="button primary" id="comparison-done">View ranking</button></div>`);
+    A.openModal(`${A.modalHeader('Quiz complete')}<div class="modal-body comparison-body">${placements}<p>${results.length?'Your ranking is saved.':''}${skipped.length?' '+skipped.length+' skipped. Skipped rides keep their previous ranking status.':''}</p></div><div class="modal-actions">${lastPlacement ? '<button class="button quiet" id="comparison-undo-final">Undo last ride</button>' : ''}<button class="button primary" id="comparison-done">View ranking</button></div>`);
     if ($('comparison-undo-final')) $('comparison-undo-final').onclick = undoPlacement;
     $('comparison-done').onclick = () => { A.closeModal(); A.setView('ranked'); };
     $('comparison-done').focus();
