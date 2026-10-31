@@ -56,10 +56,24 @@ function app(t,state){const dom=new JSDOM(fs.readFileSync(path.join(root,'index.
 
 test('catalog logging opens track choices; both tracks save as two credits and one ranked ride',t=>{
   const a=app(t);a.A.setView('explore');a.input('catalog-search','Stardust Racers');a.d.getElementById('catalog-search').dispatchEvent(new a.w.Event('input'));a.click('[data-catalog-mode="rides"]');a.input('catalog-search','Stardust Racers');a.d.getElementById('catalog-search').dispatchEvent(new a.w.Event('input'));a.click('[data-catalog-action="log"]');
-  assert.equal(a.d.getElementById('multi-track'),null);assert.equal(a.d.querySelectorAll('.auto-track-name').length,2);assert.equal(a.d.querySelector('[name="multi-track"]').type,'hidden');a.d.querySelector('[name="track-ridden-0"]').checked=true;a.d.querySelector('[name="track-ridden-1"]').checked=true;a.d.querySelector('[name="preferredTrack"]').value='yellow';a.submit('ride-form');assert.equal(a.A.getState().rides[0].ranked,false);a.click('#new-rank-now');
+  assert.equal(a.d.getElementById('multi-track'),null);assert.equal(a.d.querySelectorAll('.auto-track-name').length,2);assert.equal(a.d.querySelector('[name="multi-track"]').type,'hidden');a.d.querySelector('[name="track-ridden-0"]').checked=true;a.d.querySelector('[name="track-ridden-1"]').checked=true;
+  // Catalog IDs can change format; a visitor chooses the displayed track name.
+  const favorite=a.d.querySelector('[name="preferredTrack"]'),yellow=[...favorite.options].find(option=>option.textContent==='Yellow');assert(yellow,'The Yellow track must be available.');favorite.value=yellow.value;
+  a.submit('ride-form');assert.equal(a.A.getState().rides[0].ranked,false);assert.equal(a.A.getState().rides[0].preferredTrack,yellow.value);a.click('#new-rank-now');
   a.A.setView('ranked');assert.equal(a.d.querySelectorAll('.ride-row').length,1);assert.equal(a.d.getElementById('stat-total').textContent,'2');assert.match(a.d.querySelector('.ride-track-summary').textContent,/Favorite: Yellow/);
   a.A.setView('all');assert.equal(a.d.querySelectorAll('.ride-track-details div').length,2);assert.match(a.d.getElementById('list-summary').textContent,/2 credits/);
   a.w.TracklistQuiz.start({mode:'full'});assert.equal(a.A.getState().rides.length,1);assert.equal(a.d.getElementById('stat-total').textContent,'2');
+});
+
+test('catalog favorites preserve both legacy and provider track IDs through save, reload and edit',t=>{
+  for(const ids of [['green','yellow'],['track-1','track-2']]){
+    const a=app(t),record={id:'fixture-duel',name:'Fixture Duel',park:'Test Park',tracks:ids.map((id,i)=>({id,name:i?'Yellow':'Green',ridden:false}))};a.A.addFromCatalog(record);
+    a.d.querySelector('[name="track-ridden-0"]').checked=true;a.d.querySelector('[name="track-ridden-1"]').checked=true;
+    const favorite=a.d.querySelector('[name="preferredTrack"]'),yellow=[...favorite.options].find(option=>option.textContent==='Yellow');assert.equal(yellow.value,ids[1]);favorite.value=yellow.value;a.submit('ride-form');a.click('#new-rank-later');
+    const saved=a.A.getState(),ride=saved.rides[0];assert.equal(ride.preferredTrack,ids[1]);assert.equal(C.creditCount(saved.rides),2);assert.equal(saved.rides.length,1);assert.equal(ride.ranked,false);
+    const reloaded=app(t,saved);reloaded.A.editModal(ride.id);assert.equal(reloaded.d.querySelector('[name="preferredTrack"]').value,ids[1]);reloaded.submit('ride-form');assert.equal(reloaded.A.getState().rides[0].preferredTrack,ids[1]);
+    reloaded.A.setView('all');assert.match(reloaded.d.querySelector('.ride-track-summary').textContent,/Favorite: Yellow/);
+  }
 });
 
 test('new credits show only supplied tracks and ordinary manual credits have no separate-tracks toggle',t=>{

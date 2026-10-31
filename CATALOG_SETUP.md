@@ -127,6 +127,7 @@ The old `scripts/update-coasterpedia.cjs` command now stops without network acce
 | 429 / provider unavailable | Requests are paced below the default limit and honor bounded retries. Other jobs using the same provider account share its quota. Retry later; do not add accounts to evade limits. The last deployed catalog remains available. |
 | Schema, invalid URL or checksum failure | Do not force publication. Inspect the beta API contract and update the adapter/tests. A size approval cannot override this. |
 | Large change held | Download and review the artifact; manually rerun with approval only if expected. Scheduled runs cannot self-approve. |
+| Fetch succeeded but an app test failed | This is separate from an API rate-limit failure. Publication stays blocked. Fix the named test or app behavior, merge the fix to `main`, then start a new manual workflow run. Large-change approval does not bypass tests. |
 | `main` changed during import / push rejected | Rerun against current `main`. The updater never force-pushes or overwrites intervening app commits. |
 | Branch protection rejects bot commits | Keep protection intact. Use a local reviewed refresh and a normal PR, or explicitly configure your repository's allowed automation policy. Automatic publishing needs an allowed bot-write path; no bypass is included. |
 | Data commit exists, site still old | Check the separate Pages workflow. Rerun it after fixing its error. The next successful scheduled publication also dispatches it. A successful fetch is not proof of a successful deployment. |

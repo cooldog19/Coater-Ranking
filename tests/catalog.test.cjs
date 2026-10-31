@@ -34,6 +34,12 @@ test('rate limiting respects Retry-After and errors never echo credential-bearin
   await assert.rejects(client(()=>new Response('sensitive upstream body',{status:401})).get('parks'),error=>error.status===401&&!error.message.includes('sensitive'));
   await assert.rejects(client(()=>new Response('x'.repeat(100),{headers:{'content-length':String(20*1024*1024)}})).get('parks'),/size limit/);
 });
+test('default sequential request pacing stays below 60 requests in every minute',async()=>{
+  let clock=0;const starts=[],api=new Coasterpedia({key:'test-fixture',now:()=>clock,sleep:async ms=>{clock+=ms;},fetchImpl:async()=>{starts.push(clock);return response([]);}});
+  for(let i=0;i<65;i++)await api.get('parks');
+  for(let i=1;i<starts.length;i++)assert(starts[i]-starts[i-1]>=1250);
+  for(const start of starts)assert(starts.filter(time=>time>=start&&time<start+60000).length<=48);
+});
 test('normalization keeps date precision, stable identities, complete statuses and uncredited tracks',()=>{
   const p=M.park(rawPark()),r=rawRide();r.status='under_construction';r.dates={opening:{edtf:'2027',earliest:'2027-01-01',latest:'2027-12-31'}};r.coaster.tracks=[{index:1,name:'Left'},{index:3,name:'Right'}];r.location.coordinates={lat:28.01,lon:-81.01};r.url='https://evil.test/';
   const normalized=M.ride(r,null,[p]);assert.equal(normalized.id,'cp-1');assert.equal(normalized.parkId,'cp-park-10');assert.equal(normalized.country,'United States');assert.equal(normalized.status,'Under construction');assert.equal(normalized.dates.opening.edtf,'2027');assert.equal(normalized.tracks.length,2);assert.equal(normalized.tracks[1].id,'track-3');assert(normalized.tracks.every(t=>t.ridden===false));assert.match(normalized.source,/^https:\/\/coasterpedia.net/);
