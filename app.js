@@ -29,7 +29,7 @@
   document.querySelectorAll('[data-icon]').forEach(el => el.innerHTML = icon(el.dataset.icon));
   let STORAGE = 'tracklist.collection.v1';const EXPORT_KEY = 'tracklist.lastExport';
   let state, view = 'ranked', query = '', selection = new Set(), history = [], toastTimer, lastSelected = null;
-  let creditsView = 'name';
+  let creditsView = 'name', creditsType = '', creditsManufacturer = '', selectionMode = false;
   const alphabetical = new Intl.Collator(undefined,{sensitivity:'base',numeric:true});
   const parkKey = r => JSON.stringify([r.park.trim().toLocaleLowerCase(),r.country.trim().toLocaleLowerCase()]);
   let storageBlocked = false, recoveryRaw = '', saveFailed = false, pendingImport = null, drag = null, dragFrame = null;
@@ -76,7 +76,9 @@
     toastTimer = setTimeout(() => $('toast').hidden = true, 6500);
   }
   function visibleRides() {
-    const rides = state.rides.filter(r => (view === 'all' || r.ranked === (view === 'ranked')) && `${r.name} ${r.park} ${r.country} ${r.type} ${r.manufacturer} ${r.notes}`.toLocaleLowerCase().includes(query.toLocaleLowerCase()));
+    const rides = state.rides.filter(r => (view === 'all' || r.ranked === (view === 'ranked'))
+      && (view!=='all'||(!creditsType||r.type===creditsType)&&(!creditsManufacturer||JSON.stringify(r.manufacturer.trim())===creditsManufacturer))
+      && `${r.name} ${r.park} ${r.country} ${r.type} ${r.manufacturer} ${r.notes}`.toLocaleLowerCase().includes(query.toLocaleLowerCase()));
     if(view==='all')rides.sort((a,b)=>
       (creditsView==='park'?(Number(!a.park.trim())-Number(!b.park.trim())||alphabetical.compare(a.park.trim(),b.park.trim())||alphabetical.compare(a.country,b.country)||parkKey(a).localeCompare(parkKey(b))):0)
       ||alphabetical.compare(a.name,b.name)||alphabetical.compare(a.park,b.park)||alphabetical.compare(a.country,b.country)||a.id.localeCompare(b.id));
@@ -89,6 +91,12 @@
     return `<span class="ride-art" style="--art-bg:${bg};--art-ink:${ink}" aria-hidden="true"><svg viewBox="0 0 50 36"><path class="support" d="M8 14v22M17 6v30M26 18v18M37 26v10M44 15v21"/><path d="${tracks[hash % 3]}"/><path transform="translate(0 4)" d="${tracks[hash % 3]}"/></svg></span>`;
   }
   function render() {
+    const manufacturers=[...new Set(state.rides.map(r=>r.manufacturer.trim()))].sort(alphabetical.compare);
+    if(creditsManufacturer&&!manufacturers.some(m=>JSON.stringify(m)===creditsManufacturer))creditsManufacturer='';
+    $('credits-type').innerHTML='<option value="">All ride types</option>'+C.TYPES.map(t=>`<option value="${escape(t)}">${escape(t)}</option>`).join('');
+    $('credits-manufacturer').innerHTML='<option value="">All manufacturers</option>'+manufacturers.map(m=>`<option value="${escape(JSON.stringify(m))}">${escape(m||'Manufacturer not listed')}</option>`).join('');
+    $('credits-type').value=creditsType;$('credits-manufacturer').value=creditsManufacturer;
+    $('credits-filters').hidden=view!=='all';$('clear-credit-filters').hidden=!creditsType&&!creditsManufacturer;
     const ranked = state.rides.filter(r => r.ranked), unranked = state.rides.length - ranked.length, visible = visibleRides();
     const titles = {ranked:'My ranking',unranked:'Unranked',all:'Credits',explore:'Explore parks',wishlist:'Wish list',social:'Social',statistics:'Statistics'};
     const descriptions = {ranked:'Drag rides to reorder, or click a rank to move them.',unranked:'Place your new credits in the ranking.',all:'Your complete ridden coaster collection.',explore:'Search parks and rides, then log credits or save parks.',wishlist:'Keep track of parks to visit and rides to try.',social:'Find your people. Compare your favorites.',statistics:'Find the patterns behind your favorites.'};
@@ -102,8 +110,8 @@
     $('page-title').innerHTML = `${titles[view]}<span>.</span>`;
     $('page-description').textContent = descriptions[view]; $('breadcrumb-view').textContent = titles[view];
     document.querySelectorAll('[data-view]').forEach(b => {b.classList.toggle('active', b.dataset.view === view); b.setAttribute('aria-pressed', String(b.dataset.view === view));});
-    $('ranked-count').textContent = $('tab-ranked').textContent = $('stat-ranked').textContent = ranked.length;
-    $('unranked-count').textContent = $('tab-unranked').textContent = unranked;
+    $('ranked-count').textContent = $('stat-ranked').textContent = ranked.length;
+    $('unranked-count').textContent = unranked;
     $('all-count').textContent = $('stat-total').textContent = C.creditCount(state.rides);
     $('stat-parks').textContent = globalThis.TracklistStatisticsModel
       ? TracklistStatisticsModel.analyze(state).totals.parks
@@ -114,8 +122,9 @@
     $('credits-view-control').hidden = view !== 'all';
     $('credits-view').value = creditsView;
     const plural = visible.length === 1 ? 'ride' : 'rides';
-    $('list-summary').textContent = `${visible.length} ${plural}${query ? ' found' : view === 'ranked' ? ' in your ranking' : view === 'unranked' ? ' waiting to be ranked' : ' in your collection'}${view==='all'?' · '+C.creditCount(visible)+' credits':''}`;
-    $('footer-summary').textContent = query ? `Showing ${visible.length} of ${state.rides.filter(r => view === 'all' || r.ranked === (view === 'ranked')).length} rides` : `${C.creditCount(state.rides)} credits · ${state.rides.length} rides · ${ranked.length} ranked`;
+    const filtered=!!query||(view==='all'&&!!(creditsType||creditsManufacturer));
+    $('list-summary').textContent = `${visible.length} ${plural}${filtered ? ' found' : view === 'ranked' ? ' in your ranking' : view === 'unranked' ? ' waiting to be ranked' : ' in your collection'}${view==='all'?' · '+C.creditCount(visible)+' credits':''}`;
+    $('footer-summary').textContent = filtered ? `Showing ${visible.length} of ${state.rides.filter(r => view === 'all' || r.ranked === (view === 'ranked')).length} rides` : `${C.creditCount(state.rides)} credits · ${state.rides.length} rides · ${ranked.length} ranked`;
     const rankMap = new Map(ranked.map((r,i) => [r.id,i+1]));
     const rowMarkup = visible.map(r => {
       const rank = rankMap.get(r.id), selected = selection.has(r.id);
@@ -137,21 +146,24 @@
     renderSelection(); updateSaveStatus();document.dispatchEvent(new Event('tracklist:render'));
   }
   function emptyHTML() {
+    if(view==='all'&&(creditsType||creditsManufacturer))return `<div class="empty-state"><h2>No credits match.</h2><p>Try another type, manufacturer or search.</p><button class="button" data-action="clear-filters">Clear search and filters</button></div>`;
     if (query) return `<div class="empty-state"><div class="empty-symbol">${icon('search')}</div><h2>No rides found.</h2><p>Try another ride, park, or a word from your notes.</p><button class="button" data-action="clear-search">Clear search</button></div>`;
     const isUnranked = view === 'unranked';
     return `<div class="empty-state"><div class="empty-symbol">${icon(isUnranked ? 'inbox' : 'ticket')}</div><h2>${isUnranked ? 'No unranked rides.' : 'No rides in this view.'}</h2><p>${isUnranked ? 'New credits can wait here until you’re ready to give them a place in your ranking.' : 'Add a coaster you’ve ridden, or bring in your collection from a JSON or CSV file.'}</p>${view==='all'?`<button class="button primary" data-action="add">${icon('plus')}Add a ride</button>`:'<button class="button primary" data-action="credits">Go to Credits</button>'}${isUnranked ? '' : '<button class="button" data-action="backup">Import a collection</button>'}</div>`;
   }
   function renderSelection() {
+    $('select-multiple').textContent=selectionMode?'Done selecting':'Select multiple';$('select-multiple').setAttribute('aria-pressed',String(selectionMode));
+    $('select-all').hidden=!selectionMode;
     $('bulk-toolbar').hidden = selection.size === 0; $('selection-count').textContent = `${selection.size} selected`;
     $('bulk-unrank').hidden = !state.rides.some(r => r.ranked && selection.has(r.id));
     const visible = visibleRides(), count = visible.filter(r => selection.has(r.id)).length;
     $('select-all').checked = !!visible.length && count === visible.length;
     $('select-all').indeterminate = count > 0 && count < visible.length;
-    $('select-all').disabled = !visible.length;
+    $('select-all').disabled = !selectionMode||!visible.length;
     $('bulk-rank').max = Math.max(1,state.rides.filter(r => r.ranked && !selection.has(r.id)).length + 1);
-    document.querySelectorAll('.ride-row').forEach(row => {const on = selection.has(row.dataset.id); row.classList.toggle('selected',on); row.querySelector('.ride-select').checked = on;});
+    document.querySelectorAll('.ride-row').forEach(row => {const on = selection.has(row.dataset.id),check=row.querySelector('.ride-select'); row.classList.toggle('selected',on);check.checked=on;check.hidden=!selectionMode;check.disabled=!selectionMode;});
   }
-  function setView(next) { if (drag) finishDrag(true); view = next; selection.clear(); lastSelected = null; render(); }
+  function setView(next) { if (drag) finishDrag(true); view = next; selectionMode=false;selection.clear(); lastSelected = null; render(); }
   function modalHeader(title, description = '') { return `<div class="modal-header"><div><h2 id="modal-title">${title}</h2>${description ? `<p>${description}</p>` : ''}</div><button class="icon-button" data-close aria-label="Close dialog">${icon('close')}</button></div>`; }
   function openModal(content) { $('modal-content').innerHTML = content; if (!$('modal').open) $('modal').showModal(); $('modal').scrollTop = 0; }
   function closeModal() { $('modal').close(); pendingImport = null; }
@@ -164,31 +176,64 @@
     const input = options.textarea ? `<textarea ${common} maxlength="10000" rows="4" placeholder="${escape(options.placeholder || '')}">${escape(value)}</textarea>` : `<input ${common} type="${options.type || 'text'}" value="${escape(value)}" maxlength="${options.max || 160}" placeholder="${escape(options.placeholder || '')}" ${options.min ? `min="${options.min}" step="1"` : ''}>`;
     return `<label class="${classes}"><span>${label}${optional}</span>${input}${options.help ? `<small>${options.help}</small>` : ''}</label>`;
   }
-  function addModal(multiple = false) {
-    openModal(`${modalHeader('Add rides', 'Use the catalog or enter ride details.')}<div class="modal-body"><div class="modal-tabs"><button id="single-tab" class="${multiple ? '' : 'active'}">One ride</button><button id="multiple-tab" class="${multiple ? 'active' : ''}">Add several</button></div><form id="ride-form">${multiple ? `<div class="form-grid">${field('Ride names','names','',{textarea:true,full:true,required:true,placeholder:'Ride name | Park name\nAnother ride | Another park',help:'One ride per line. Add a park after a | separator if you like.'})}</div><label class="inline-check"><input name="ranked" type="checkbox"> Add to the end of my ranking</label>` : rideFields()}<p id="form-error" class="form-error" role="alert" hidden></p></form></div><div class="modal-actions"><button class="button quiet" data-close>Cancel</button><button class="button primary" type="submit" form="ride-form">${multiple ? 'Add rides' : 'Add ride'}</button>${globalThis.TracklistQuiz ? '<button class="button" id="add-compare" type="submit" form="ride-form">Add & compare</button>' : ''}</div>`);
-    $('single-tab').onclick = () => addModal(false); $('multiple-tab').onclick = () => addModal(true);
-    if (globalThis.TracklistQuiz) {
-      const help = document.createElement('p'); help.className='comparison-help'; help.textContent='Add & compare finds a place through the quiz and saves it automatically as you answer.'; $('ride-form').append(help);
-    }
+  function addModal(multiple = false, initialRecord = null) {
+    const records=globalThis.TRACKLIST_CATALOG?.rides||[],K=globalThis.TracklistCatalog;
+    const catalogAvailable=!!(K&&records.length);let selectedRecord=null;
+    const today=()=>{const now=new Date();return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;};
+    openModal(`${modalHeader('Add a ride', 'Find a coaster you’ve ridden. Choose when to rank it after saving.')}<div class="modal-body"><div class="modal-tabs"><button id="single-tab" class="${multiple?'':'active'}">Find a ride</button><button id="multiple-tab" class="${multiple?'active':''}">Add several manually</button></div><form id="ride-form">${multiple?`<div class="form-grid">${field('Ride names','names','',{textarea:true,full:true,required:true,placeholder:'Ride name | Park name\nAnother ride | Another park',help:'One ride per line. You can rank them together after saving.'})}</div>`:`${catalogAvailable?'<div class="catalog-autofill"><label class="field"><span>Find in the ride catalog</span><input type="search" id="add-catalog-search" placeholder="Search a ride or park…" autocomplete="off"></label><div id="add-catalog-results" aria-live="polite"></div></div><div id="selected-catalog-ride" class="selected-catalog-ride" hidden></div><button class="button quiet" type="button" id="add-manually" aria-expanded="false" aria-controls="manual-ride-fields">Add manually</button>':''}<fieldset id="manual-ride-fields" class="manual-ride-fields" ${catalogAvailable?'hidden disabled':''}><legend class="sr-only">Ride details</legend>${rideFields({ranked:false},{adding:true,tracks:false})}</fieldset><div id="track-fields" ${catalogAvailable?'hidden':''}></div>`}<p id="form-error" class="form-error" role="alert" hidden></p></form></div><div class="modal-actions"><button class="button quiet" data-close>Cancel</button><button class="button primary" id="save-new-credit" type="submit" form="ride-form">${multiple?'Add credits':'Add credit'}</button></div>`);
+    $('single-tab').onclick=()=>addModal(false);$('multiple-tab').onclick=()=>addModal(true);
     $('ride-form').onsubmit = e => {
-      e.preventDefault(); const data = new FormData(e.target), compare = e.submitter?.id === 'add-compare';
+      e.preventDefault(); const data = new FormData(e.target);
       try {
+        if(!multiple&&$('manual-ride-fields').disabled)throw Error('Choose a ride from the catalog or press Add manually.');
         const used = new Set(state.rides.map(r => r.id)); let added;
         if (multiple) {
           const lines = String(data.get('names')).split(/\r?\n/).map(s => s.trim()).filter(Boolean);
           if (!lines.length) throw new Error('Add at least one ride name.');
           if (lines.length + state.rides.length > C.LIMIT) throw new Error(`A collection can contain up to ${C.LIMIT.toLocaleString()} rides.`);
-          added = lines.map(line => {const [name,...park] = line.split('|'); return C.ride({name,park:park.join('|'),ranked:data.has('ranked')},used);});
-        } else added = [readRideForm(data, used)];
-        if (compare) added = added.map(r=>({...r,ranked:false}));
-        if (commit([...state.rides,...added], `${added.length === 1 ? added[0].name : `${added.length} rides`} added.`)) {view = added[0].ranked ? 'ranked' : 'unranked'; query=''; $('search').value=''; render(); closeModal(); if(compare)globalThis.TracklistQuiz.start({mode:'queue',ids:added.map(r=>r.id)});}
+          added = lines.map(line => {const [name,...park] = line.split('|'); return C.ride({name,park:park.join('|'),ranked:false},used);});
+        } else added = [{...readRideForm(data,used),ranked:false}];
+        const seen=state.rides.filter(r=>!r.demoRide);
+        for(const ride of added){if(seen.some(r=>C.sameRide(r,ride)))throw Error(`${ride.name} is already in Credits or appears more than once here. Open its ride details to edit it.`);seen.push(ride);}
+        const rides=[...state.rides.filter(r=>!r.demoRide||!added.some(a=>C.sameRide(a,r))),...added];
+        const wishes=state.wishlist.filter(w=>!added.some(r=>C.sameRide(r,w)));
+        if (commit(rides,`${added.length===1?added[0].name:added.length+' rides'} added to Credits.`,state.demo,wishes)) {
+          view='all';query='';creditsType='';creditsManufacturer='';selectionMode=false;$('search').value='';render();closeModal();offerRanking(added.map(r=>r.id));
+        }
       } catch (error) { formError(error.message); }
     };
-    if(!multiple)mountTrackFields({});
-    document.dispatchEvent(new CustomEvent('tracklist:add-form',{detail:{multiple}}));
+    if(multiple){$('field-names').focus();return;}
+    mountTrackFields({});$('field-riddenOn').value=today();
+    if(!catalogAvailable){$('field-name').focus();return;}
+    const form=$('ride-form'),details=$('manual-ride-fields');
+    const toggleDetails=()=>{const expanded=!details.hidden;details.hidden=expanded;details.disabled=expanded&&!selectedRecord&&!$('field-name').value.trim();$('add-manually').setAttribute('aria-expanded',String(!expanded));$('add-manually').textContent=expanded?(selectedRecord?'Edit ride details':'Add manually'):'Hide details';$('track-fields').hidden=expanded&&!selectedRecord;if(!expanded)$('field-name').focus();};
+    $('add-manually').onclick=toggleDetails;
+    form.addEventListener('invalid',event=>{if(details.contains(event.target)&&details.hidden){details.hidden=false;$('add-manually').setAttribute('aria-expanded','true');$('add-manually').textContent='Hide details';}},true);
+    function selectRecord(record){
+      selectedRecord=record;const wish=state.wishlist.find(r=>C.sameRide(r,record));
+      for(const key of ['name','park','country','manufacturer','pov','rcdb'])$('field-'+key).value=record[key]||'';
+      $('field-type').value=C.TYPES.includes(record.type)?record.type:'Other';$('field-notes').value=wish?.notes||'';$('field-riddenOn').value=today();
+      form.dataset.catalogId=record.id;details.disabled=false;
+      $('selected-catalog-ride').hidden=false;$('selected-catalog-ride').innerHTML=`<strong>${escape(record.name)}</strong><span>${escape(record.park)} · ${escape(record.manufacturer||'Manufacturer not listed')} · ${escape(record.type||'Other')}</span>`;
+      $('add-catalog-search').value=record.name;$('add-catalog-results').replaceChildren();$('add-manually').textContent=details.hidden?'Edit ride details':'Hide details';
+      $('track-fields').hidden=false;mountTrackFields(C.ride({...record,ranked:false}));$('form-error').hidden=true;
+    }
+    $('add-catalog-search').oninput=event=>{
+      const q=K.fold(event.target.value),matches=q.length>=2?records.filter(r=>K.fold(`${r.name} ${(r.aliases||[]).join(' ')} ${r.park}`).includes(q)).slice(0,12):[];
+      $('add-catalog-results').innerHTML=matches.map(r=>`<button class="autofill-result" type="button" data-autofill="${escape(r.id)}"><strong>${escape(r.name)}</strong><span>${escape(r.park)}${r.status?' · '+escape(r.status):''}</span></button>`).join('')+(q.length>=2&&!matches.length?'<p class="help-copy">No catalog matches. Use Add manually to enter this ride.</p>':'');
+    };
+    $('add-catalog-results').onclick=event=>{const b=event.target.closest('[data-autofill]');if(b){const r=records.find(r=>r.id===b.dataset.autofill);if(r)selectRecord(r);}};
+    if(initialRecord)selectRecord(initialRecord);else $('add-catalog-search').focus();
   }
-  function rideFields(r = {}) {
-    return `<div class="form-grid">${field('Ride name','name',r.name,{required:true,full:true,placeholder:'e.g. Steel Vengeance'})}${field('Park','park',r.park,{placeholder:'e.g. Cedar Point'})}${field('Country','country',r.country,{max:80,placeholder:'e.g. United States'})}<label class="field"><span>Coaster type</span><select id="field-type" name="type">${C.TYPES.map(t=>`<option ${r.type === t ? 'selected' : ''}>${t}</option>`).join('')}</select></label>${field('Manufacturer','manufacturer',r.manufacturer,{max:100})}${field('First ridden','riddenOn',r.riddenOn,{type:'date',max:10})}${field('YouTube POV link','pov',r.pov,{type:'url',max:2000,mobileFull:true,placeholder:'https://youtube.com/watch?v=…'})}${field('RCDB ride page','rcdb',r.rcdb,{type:'url',max:2000,full:true,placeholder:'https://rcdb.com/123.htm'})}${field('Personal notes','notes',r.notes,{textarea:true,full:true,placeholder:'Seats, ride experience, or anything you want to remember'})}</div><div id="track-fields"></div><label class="inline-check"><input name="ranked" type="checkbox" ${r.ranked !== false ? 'checked' : ''}>${r.id ? 'Included in my ranking' : 'Add to the end of my ranking'}</label>`;
+  function offerRanking(ids){
+    if(!globalThis.TracklistQuiz)return;
+    const rides=state.rides.filter(r=>ids.includes(r.id)&&!r.ranked);if(!rides.length)return;
+    const owner=STORAGE;
+    openModal(`${modalHeader('Find a place in your ranking',rides.length===1?escape(rides[0].name):rides.length+' new rides')}<div class="modal-body help-copy"><p>Your ${rides.length===1?'credit is':'credits are'} saved in Credits and Unranked. Take a quick comparison quiz to place ${rides.length===1?'this ride':'these rides'} in your ranking, or leave it for later.</p></div><div class="modal-actions"><button class="button quiet" id="new-rank-later" data-close>Do later</button><button class="button primary" id="new-rank-now">Rank now</button></div>`);
+    $('new-rank-now').onclick=()=>{if(owner===STORAGE){const pending=state.rides.filter(r=>ids.includes(r.id)&&!r.ranked);if(pending.length)globalThis.TracklistQuiz.start({mode:'queue',ids:pending.map(r=>r.id)});else closeModal();}};
+  }
+  function rideFields(r = {},{adding=false,tracks=true}={}) {
+    return `<div class="form-grid">${field('Ride name','name',r.name,{required:true,full:true,placeholder:'e.g. Steel Vengeance'})}${field('Park','park',r.park,{placeholder:'e.g. Cedar Point'})}${field('Country','country',r.country,{max:80,placeholder:'e.g. United States'})}<label class="field"><span>Coaster type</span><select id="field-type" name="type">${C.TYPES.map(t=>`<option ${r.type === t ? 'selected' : ''}>${t}</option>`).join('')}</select></label>${field('Manufacturer','manufacturer',r.manufacturer,{max:100})}${field('First ridden','riddenOn',r.riddenOn,{type:'date',max:10})}${field('YouTube POV link','pov',r.pov,{type:'url',max:2000,mobileFull:true,placeholder:'https://youtube.com/watch?v=…'})}${field('RCDB ride page','rcdb',r.rcdb,{type:'url',max:2000,full:true,placeholder:'https://rcdb.com/123.htm'})}${field('Personal notes','notes',r.notes,{textarea:true,full:true,placeholder:'Seats, ride experience, or anything you want to remember'})}</div>${tracks?'<div id="track-fields"></div>':''}${adding?'':`<label class="inline-check"><input name="ranked" type="checkbox" ${r.ranked !== false ? 'checked' : ''}>Included in my ranking</label>`}`;
   }
   let formTracks=[];
   function readTrackForm(data,force=false){return data.has('multi-track')||force?formTracks.map((t,i)=>({...t,name:data.get('track-name-'+i),ridden:data.has('track-ridden-'+i),notes:data.get('track-notes-'+i)||'',riddenOn:data.get('track-date-'+i)||''})):[];}
@@ -206,7 +251,7 @@
   }
   function readRideForm(data, used = new Set(), id) {
     const previous=id?state.rides.find(r=>r.id===id):null;
-    const raw={...previous,...Object.fromEntries(data.entries()),tracks:readTrackForm(data),id:id || C.uid(),ranked:data.has('ranked'),demoRide:previous?.demoRide||false};
+    const raw={...previous,catalogId:$('ride-form')?.dataset.catalogId||previous?.catalogId,...Object.fromEntries(data.entries()),tracks:readTrackForm(data),id:id || C.uid(),ranked:data.has('ranked'),demoRide:previous?.demoRide||false};
     if(globalThis.TracklistCatalog&&globalThis.TRACKLIST_CATALOG){const matching=TracklistCatalog.match(raw,TRACKLIST_CATALOG.rides);if(matching.match)return C.ride(TracklistCatalog.enrich(raw,matching.match),used);}
     return C.ride(raw,used);
   }
@@ -308,11 +353,15 @@
   document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>setView(b.dataset.view));
   $('search').addEventListener('input',e=>{query=e.target.value;selection.clear();lastSelected=null;render();});
   $('credits-view').onchange=e=>{if(drag)finishDrag(true);creditsView=e.target.value==='park'?'park':'name';selection.clear();lastSelected=null;render();};
+  const filterCredits=()=>{creditsType=$('credits-type').value;creditsManufacturer=$('credits-manufacturer').value;selection.clear();lastSelected=null;render();};
+  $('credits-type').onchange=filterCredits;$('credits-manufacturer').onchange=filterCredits;
+  $('clear-credit-filters').onclick=()=>{creditsType='';creditsManufacturer='';selection.clear();lastSelected=null;render();};
+  $('select-multiple').onclick=()=>{selectionMode=!selectionMode;selection.clear();lastSelected=null;renderSelection();};
   $('add-button').onclick=()=>{if(view==='wishlist')document.dispatchEvent(new Event('tracklist:wish-picker'));else if(view==='all')addModal();}; $('backup-button').onclick=backupModal; $('footer-backup').onclick=backupModal;
   $('export-top').onclick=()=>exportData();
   $('clear-demo').onclick=()=>confirmModal('Remove sample rides?', 'This removes the sample rides. Any rides you added are kept. You can undo this change.', 'Start my own list',()=>{selection.clear();query='';$('search').value='';commit(state.rides.filter(r=>!r.demoRide),'Sample rides cleared. Your collection is ready.',false);closeModal();if(!state.rides.length){view='all';render();addModal();}});
   $('undo-button').onclick=undo; $('toast-undo').onclick=undo; $('toast-close').onclick=()=>$('toast').hidden=true;
-  $('select-all').onchange=e=>{visibleRides().forEach(r=>e.target.checked?selection.add(r.id):selection.delete(r.id));renderSelection();};
+  $('select-all').onchange=e=>{if(!selectionMode)return;visibleRides().forEach(r=>e.target.checked?selection.add(r.id):selection.delete(r.id));renderSelection();};
   $('clear-selection').onclick=()=>{selection.clear();renderSelection();};
   $('bulk-move').onclick=()=>{
     const input=$('bulk-rank');if(!input.reportValidity())return;
@@ -321,7 +370,7 @@
   $('bulk-unrank').onclick=()=>{const count=selection.size;commit(C.unrank(state.rides,[...selection]),`${count} rides moved to Unranked.`);selection.clear();renderSelection();};
   $('ride-list').addEventListener('click',e=>{
     const action=e.target.closest('[data-action]'), row=e.target.closest('.ride-row');
-    if(e.target.matches('.ride-select')&&row){
+    if(e.target.matches('.ride-select')&&row&&selectionMode){
       const id=row.dataset.id, checked=e.target.checked;
       const visible=visibleRides().map(r=>r.id),a=visible.indexOf(lastSelected),b=visible.indexOf(id);
       const range=e.shiftKey&&a>=0?visible.slice(Math.min(a,b),Math.max(a,b)+1):[id];
@@ -333,6 +382,7 @@
     else if(['edit','notes'].includes(action.dataset.action))editModal(id,action.dataset.action==='notes');
     else if(action.dataset.action==='add'&&view==='all')addModal();
     else if(action.dataset.action==='credits')setView('all');
+    else if(action.dataset.action==='clear-filters'){creditsType='';creditsManufacturer='';query='';$('search').value='';selection.clear();lastSelected=null;render();}
     else if(action.dataset.action==='backup')backupModal();
     else if(action.dataset.action==='clear-search'){query='';$('search').value='';render();$('search').focus();}
   });
@@ -396,14 +446,14 @@
     if(e.key!==STORAGE||!e.newValue)return;
     try{const next=C.normalize(JSON.parse(e.newValue));finishDrag(true);state=next;history=[];selection.clear();storageBlocked=false;saveFailed=false;$('storage-warning').hidden=true;if($('modal').open)closeModal();render();toast('Collection updated from another tab.',false);}catch{showStorageWarning('Another tab changed the saved data to an unreadable format. Export your current collection before continuing.');storageBlocked=true;saveFailed=true;updateSaveStatus();}
   });
-  globalThis.TracklistApp={getState:()=>JSON.parse(JSON.stringify(state)),getView:()=>view,getStorageKey:()=>STORAGE,escape,icon,art,openModal,closeModal,modalHeader,toast,setView,rankModal,editModal,backupModal,exportData,mountTrackFields,
+  globalThis.TracklistApp={getState:()=>JSON.parse(JSON.stringify(state)),getView:()=>view,getStorageKey:()=>STORAGE,escape,icon,art,openModal,closeModal,modalHeader,toast,setView,rankModal,editModal,backupModal,exportData,mountTrackFields,offerRanking,addFromCatalog:record=>addModal(false,record),
     change:(patch,message)=>commit(patch.rides||state.rides,message,state.demo,patch.wishlist||state.wishlist,patch.parkWishlist||state.parkWishlist),
     restore:(next,message)=>{const data=C.normalize(next);return commit(data.rides,message,data.demo,data.wishlist,data.parkWishlist);},
     switchAccount:(uid)=>{
       persist();const current=state,fromGuest=STORAGE==='tracklist.collection.v1';STORAGE=uid?`tracklist.collection.v1.${uid}`:'tracklist.collection.v1';
       let saved=null;try{saved=localStorage.getItem(STORAGE);}catch{}
       recoveryRaw='';try{state=saved?C.normalize(JSON.parse(saved)):C.normalize({version:1,rides:uid&&fromGuest?current.rides.filter(r=>!r.demoRide):[],wishlist:uid&&fromGuest?current.wishlist:[],parkWishlist:uid&&fromGuest?current.parkWishlist:[]});storageBlocked=false;}catch{state=C.normalize({version:1,rides:[]});storageBlocked=true;showStorageWarning('This account’s local save is unreadable. Export a recovery file before replacing it.');recoveryRaw=saved||'';}
-      history=[];selection.clear();if($('modal').open)closeModal();view='ranked';query='';$('search').value='';persist();render();return {hasLocal:!!saved,unreadable:storageBlocked,meaningful:!!(state.rides.length||state.wishlist.length||state.parkWishlist.length)&&!state.demo};
+      history=[];selectionMode=false;creditsType='';creditsManufacturer='';selection.clear();if($('modal').open)closeModal();view='ranked';query='';$('search').value='';persist();render();return {hasLocal:!!saved,unreadable:storageBlocked,meaningful:!!(state.rides.length||state.wishlist.length||state.parkWishlist.length)&&!state.demo};
     },
     applyRemote:next=>{checkpoint(true);state=C.normalize(next);storageBlocked=false;history=[];selection.clear();if($('modal').open)closeModal();persist();render();},
   };
