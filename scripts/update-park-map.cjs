@@ -1,6 +1,6 @@
 // Maintenance only: public park coordinates and a public-domain land outline.
 const fs=require('node:fs'),path=require('node:path');
-const K=require('../catalog.js'),{parse:parseArticle}=require('./update-coasterpedia.cjs');
+const K=require('../catalog.js');
 const root=path.resolve(__dirname,'..');
 const landURL='https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_land.geojson';
 const query=`SELECT DISTINCT ?park ?name ?alias ?country ?coord WHERE {
@@ -22,29 +22,19 @@ async function run(){
     const r=records.get(id),alias=row.alias?.value;if(alias&&!r.aliases.includes(alias))r.aliases.push(alias);
   }
   if(records.size<500||landPath.length<10000)throw Error('Map response is incomplete; existing map data is unchanged.');
-  // The reviewed public article cache is produced by update-coasterpedia.cjs.
-  // Use only agreeing ride coordinates as approximate park centers; retain every source revision.
-  const cache=path.join(root,'test-results/catalog-cache'),grouped=new Map();
-  if(!fs.existsSync(cache))throw Error('Refresh the public Coasterpedia article cache first; existing map is unchanged.');
-  const cacheFiles=fs.readdirSync(cache).filter(f=>/^\d+\.json$/.test(f)).sort((a,b)=>parseInt(a)-parseInt(b));
-  if(!cacheFiles.length||cacheFiles.some((file,i)=>parseInt(file)!==i)||JSON.parse(fs.readFileSync(path.join(cache,cacheFiles.at(-1)),'utf8')).continue)throw Error('Public article cache is incomplete; existing map is unchanged.');
-  const country=value=>({England:'United Kingdom',Scotland:'United Kingdom',Wales:'United Kingdom','Northern Ireland':'United Kingdom'}[value]||value);
-  for(const file of cacheFiles){const cached=JSON.parse(fs.readFileSync(path.join(cache,file),'utf8'));
-    for(const page of cached.query?.pages||[]){const record=parseArticle(page),text=page.revisions?.[0]?.slots?.main?.content||'';
-      const lat=Number(text.match(/\|\s*coord_lat\s*=\s*(-?\d+(?:\.\d+)?)/i)?.[1]),lon=Number(text.match(/\|\s*coord_long\s*=\s*(-?\d+(?:\.\d+)?)/i)?.[1]);
-      if(!record||!Number.isFinite(lat)||!Number.isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180||(lat===0&&lon===0))continue;
-      const nation=country(record.country),key=K.parkKey(record)+'|'+K.fold(nation);if(!grouped.has(key))grouped.set(key,{name:record.park,country:nation,points:[]});grouped.get(key).points.push({lat,lon,source:record.source});
-    }
-  }
+  // Source-approved API park coordinates, already checked by the catalog pipeline.
+  const {catalog,manifest}=require('./catalog-files.cjs').check(root,path.join(root,'catalog-sync/state.json'));
+  if(!manifest.initialized)throw Error('Bootstrap the official catalog first. Existing map data is unchanged.');
   let added=0;
-  for(const [key,park] of grouped){const matches=[...records.values()].filter(p=>country(p.country)===park.country&&[p.name,...p.aliases].some(name=>K.parkKey({park:name})===K.parkKey({park:park.name})));if(matches.length)continue;
-    const middle=values=>{const sorted=[...values].sort((a,b)=>a-b);return sorted[Math.floor(sorted.length/2)];};const lat=middle(park.points.map(p=>p.lat)),lon=middle(park.points.map(p=>p.lon));
-    if(park.points.some(p=>Math.hypot((p.lon-lon)*Math.cos(lat*Math.PI/180),p.lat-lat)*111>10))continue;
-    const id='cp-park-'+key;records.set(id,{id,name:park.name,aliases:[],country:park.country,lat,lon,source:park.points[0].source,sources:[...new Set(park.points.map(p=>p.source))],license:'CC-BY-SA-4.0',approximate:true});added++;
+  for(const park of catalog.parks){
+    if(!park.coordinates||!park.sourceId)continue;
+    const matches=[...records.values()].filter(p=>K.fold(p.country)===K.fold(park.country)&&[p.name,...p.aliases].some(n=>K.fold(n)===K.fold(park.name)));
+    if(matches.length)continue;
+    records.set(park.id,{id:park.id,name:park.name,aliases:park.aliases||[],country:park.country,...park.coordinates,source:park.source,license:'CC-BY-SA-4.0'});added++;
   }
   const data={version:1,updatedAt:new Date().toISOString(),landPath,parks:[...records.values()].sort((a,b)=>a.name.localeCompare(b.name))};
   fs.writeFileSync(path.join(root,'park-map-data.js'),'// Natural Earth public-domain land; Wikidata CC0 and Coasterpedia CC BY-SA 4.0 locations. See MAP_LICENSE.md.\n'+'globalThis.TRACKLIST_PARK_MAP = '+JSON.stringify(data)+';\n');
-  console.log('Added '+added+' approximate parks from source-attributed public ride coordinates.');
+  console.log('Added '+added+' parks from the official catalog.');
   console.log('Bundled '+data.parks.length+' park locations and Natural Earth land.');
 }
 run().catch(error=>{console.error(error.message);process.exitCode=1;});

@@ -23,6 +23,7 @@ test('build discards unexpected stale files and deploys only an explicit public 
   execFileSync(process.execPath,['scripts/build.cjs'],{cwd:root});
   assert.equal(fs.existsSync(path.join(dist,'private-stale.txt')),false);
   assert.equal(fs.existsSync(path.join(dist,'firestore.rules')),false);assert.equal(fs.existsSync(path.join(dist,'package-lock.json')),false);
+  assert.equal(fs.existsSync(path.join(dist,'catalog-sync')),false);assert.equal(fs.existsSync(path.join(dist,'CATALOG_SETUP.md')),false);assert.equal(fs.existsSync(path.join(dist,'catalog.json')),true);assert.equal(fs.existsSync(path.join(dist,'catalog-manifest.json')),true);
   const html=fs.readFileSync(path.join(dist,'index.html'),'utf8');
   assert.match(html,/Content-Security-Policy/);assert.match(html,/object-src 'none'/);assert.match(html,/form-action 'none'/);
   assert.equal(/<script[^>]*>\s*[^<\s]/.test(html),false);
