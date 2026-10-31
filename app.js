@@ -178,6 +178,7 @@
   }
   function addModal(multiple = false, initialRecord = null) {
     const records=globalThis.TRACKLIST_CATALOG?.rides||[],K=globalThis.TracklistCatalog;
+    const sameCredit=(a,b)=>K?K.same(records.find(r=>r.id===a.catalogId)||a,records.find(r=>r.id===b.catalogId)||b):C.sameRide(a,b);
     const catalogAvailable=!!(K&&records.length);let selectedRecord=null;
     const today=()=>{const now=new Date();return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;};
     openModal(`${modalHeader('Add a ride', 'Find a coaster you’ve ridden. Choose when to rank it after saving.')}<div class="modal-body"><div class="modal-tabs"><button id="single-tab" class="${multiple?'':'active'}">Find a ride</button><button id="multiple-tab" class="${multiple?'active':''}">Add several manually</button></div><form id="ride-form">${multiple?`<div class="form-grid">${field('Ride names','names','',{textarea:true,full:true,required:true,placeholder:'Ride name | Park name\nAnother ride | Another park',help:'One ride per line. You can rank them together after saving.'})}</div>`:`${catalogAvailable?'<div class="catalog-autofill"><label class="field"><span>Find in the ride catalog</span><input type="search" id="add-catalog-search" placeholder="Search a ride or park…" autocomplete="off"></label><div id="add-catalog-results" aria-live="polite"></div></div><div id="selected-catalog-ride" class="selected-catalog-ride" hidden></div><button class="button quiet" type="button" id="add-manually" aria-expanded="false" aria-controls="manual-ride-fields">Add manually</button>':''}<fieldset id="manual-ride-fields" class="manual-ride-fields" ${catalogAvailable?'hidden disabled':''}><legend class="sr-only">Ride details</legend>${rideFields({ranked:false},{adding:true,tracks:false})}</fieldset><div id="track-fields" ${catalogAvailable?'hidden':''}></div>`}<p id="form-error" class="form-error" role="alert" hidden></p></form></div><div class="modal-actions"><button class="button quiet" data-close>Cancel</button><button class="button primary" id="save-new-credit" type="submit" form="ride-form">${multiple?'Add credits':'Add credit'}</button></div>`);
@@ -194,9 +195,9 @@
           added = lines.map(line => {const [name,...park] = line.split('|'); return C.ride({name,park:park.join('|'),ranked:false},used);});
         } else added = [{...readRideForm(data,used),ranked:false}];
         const seen=state.rides.filter(r=>!r.demoRide);
-        for(const ride of added){if(seen.some(r=>C.sameRide(r,ride)))throw Error(`${ride.name} is already in Credits or appears more than once here. Open its ride details to edit it.`);seen.push(ride);}
-        const rides=[...state.rides.filter(r=>!r.demoRide||!added.some(a=>C.sameRide(a,r))),...added];
-        const wishes=state.wishlist.filter(w=>!added.some(r=>C.sameRide(r,w)));
+        for(const ride of added){if(seen.some(r=>sameCredit(r,ride)))throw Error(`${ride.name} is already in Credits or appears more than once here. Open its ride details to edit it.`);seen.push(ride);}
+        const rides=[...state.rides.filter(r=>!r.demoRide||!added.some(a=>sameCredit(a,r))),...added];
+        const wishes=state.wishlist.filter(w=>!added.some(r=>sameCredit(r,w)));
         if (commit(rides,`${added.length===1?added[0].name:added.length+' rides'} added to Credits.`,state.demo,wishes)) {
           view='all';query='';creditsType='';creditsManufacturer='';selectionMode=false;$('search').value='';render();closeModal();offerRanking(added.map(r=>r.id));
         }
@@ -210,7 +211,7 @@
     $('add-manually').onclick=toggleDetails;
     form.addEventListener('invalid',event=>{if(details.contains(event.target)&&details.hidden){details.hidden=false;$('add-manually').setAttribute('aria-expanded','true');$('add-manually').textContent='Hide details';}},true);
     function selectRecord(record){
-      selectedRecord=record;const wish=state.wishlist.find(r=>C.sameRide(r,record));
+      selectedRecord=record;const wish=state.wishlist.find(r=>sameCredit(r,record));
       for(const key of ['name','park','country','manufacturer','pov','rcdb'])$('field-'+key).value=record[key]||'';
       $('field-type').value=C.TYPES.includes(record.type)?record.type:'Other';$('field-notes').value=wish?.notes||'';$('field-riddenOn').value=today();
       form.dataset.catalogId=record.id;details.disabled=false;

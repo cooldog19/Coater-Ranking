@@ -8,6 +8,7 @@ const checks=[
   ['service account',/"type"\s*:\s*"service_account"/],
   ['GitHub token',/(?:gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{60,})/],
   ['AWS access key',/\b(?:AKIA|ASIA)[A-Z0-9]{16}\b/],
+  ['Coasterpedia credential',/\b(?:cpk|cps)_[A-Za-z0-9_-]{20,}\b/],
   ['machine home path',/(?:[A-Za-z]:[\\/]+[Uu]sers[\\/]+[^\s"'<>]+|\/Users\/[^\s"'<>]+|\/home\/[^\s"'<>]+)/],
   ['credential-bearing URL',/https?:\/\/[^\s/:'"]+:[^\s/@'"]+@/i],
 ];
@@ -35,7 +36,7 @@ if(process.argv.includes('--history')){
 }
 const dist=path.join(root,'dist');
 if(fs.existsSync(dist))for(const name of fs.readdirSync(dist)){
-  if(!/^(?:index\.html|(?:styles|features|comparison|social|statistics)\.css|(?:core|app|catalog-data|catalog|migration|recovery|firebase-config|sync-model|cloud|features|comparison-model|comparison|social-model|social|statistics-model|statistics|park-map-data)\.js|favicon\.svg|(?:CATALOG_LICENSE|MAP_LICENSE)\.md|\.nojekyll)$/.test(name))findings.push(`build: ${name} (unexpected deployed file)`);
+  if(!/^(?:index\.html|(?:catalog|catalog-manifest)\.json|(?:styles|features|comparison|social|statistics)\.css|(?:core|app|catalog-data|catalog|migration|recovery|firebase-config|sync-model|cloud|features|comparison-model|comparison|social-model|social|statistics-model|statistics|park-map-data)\.js|favicon\.svg|(?:CATALOG_LICENSE|MAP_LICENSE)\.md|\.nojekyll)$/.test(name))findings.push(`build: ${name} (unexpected deployed file)`);
   else scan(name,fs.readFileSync(path.join(dist,name),'utf8'),'build');
 }
 if(findings.length){console.error(findings.join('\n'));process.exitCode=1;}

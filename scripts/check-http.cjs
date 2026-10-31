@@ -10,8 +10,9 @@ const ready=new Promise((resolve,reject)=>{
 (async()=>{
   await ready;
   const origin='http://127.0.0.1:4184',html=await(await fetch(origin)).text();assert.match(html,/Content-Security-Policy/);
-  for(const file of ['index.html','styles.css','features.css','comparison.css','comparison-model.js','comparison.js','social.css','social-model.js','social.js','statistics.css','statistics-model.js','statistics.js','park-map-data.js','MAP_LICENSE.md','core.js','app.js','catalog-data.js','catalog.js','migration.js','recovery.js','firebase-config.js','sync-model.js','cloud.js','features.js','favicon.svg','CATALOG_LICENSE.md'])assert.equal((await fetch(`${origin}/${file}`)).status,200,file);
-  for(const file of ['.git/config','.env','package-lock.json','FIREBASE_SETUP.md','firestore.rules','scripts/build.cjs','..%2FREADME.md'])assert.equal((await fetch(`${origin}/${file}`)).status,404,file);
+  for(const file of ['catalog.json','catalog-manifest.json','index.html','styles.css','features.css','comparison.css','comparison-model.js','comparison.js','social.css','social-model.js','social.js','statistics.css','statistics-model.js','statistics.js','park-map-data.js','MAP_LICENSE.md','core.js','app.js','catalog-data.js','catalog.js','migration.js','recovery.js','firebase-config.js','sync-model.js','cloud.js','features.js','favicon.svg','CATALOG_LICENSE.md'])assert.equal((await fetch(`${origin}/${file}`)).status,200,file);
+  for(const file of ['catalog-sync/state.json','CATALOG_SETUP.md','.git/config','.env','package-lock.json','FIREBASE_SETUP.md','firestore.rules','scripts/build.cjs','..%2FREADME.md'])assert.equal((await fetch(`${origin}/${file}`)).status,404,file);
+  if(process.argv.includes('--local-only')){console.log('Public assets responded correctly; catalog maintenance state and private/development paths returned 404.');return;}
   const context={};vm.createContext(context);vm.runInContext(fs.readFileSync('firebase-config.js','utf8'),context);
   const project=context.TRACKLIST_FIREBASE_CONFIG.projectId;
   stage='production anonymous read';

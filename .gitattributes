@@ -1,2 +1,7 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+# Public catalog hashes and generated bundles are byte-for-byte reproducible.
+/catalog-data.js text eol=lf
+/catalog.json text eol=lf
+/catalog-manifest.json text eol=lf
+/catalog-sync/*.json text eol=lf

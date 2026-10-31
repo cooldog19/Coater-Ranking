@@ -1,0 +1,264 @@
+{
+  "auditDate": "2026-10-31",
+  "scope": "Bundled public catalog only; no personal collections or account data accessed.",
+  "catalogUpdatedAt": "2026-10-10T01:39:29.409Z",
+  "schemaVersion": 1,
+  "bytes": 1442679,
+  "rides": 4232,
+  "parkNameStrings": 1724,
+  "normalizedParkGroups": 1710,
+  "normalizedParkGroupsAreVerifiedDistinctParks": false,
+  "sources": {
+    "coasterpedia.net": 4191,
+    "www.wikidata.org": 41
+  },
+  "statuses": {
+    "Operating": 2814,
+    "Defunct": 1090,
+    "Unknown": 324,
+    "Planned": 4
+  },
+  "missing": {
+    "country": 1,
+    "manufacturer": 483,
+    "type": 79,
+    "rcdb": 535,
+    "pov": 1859,
+    "parkId": 4232
+  },
+  "explicitTrackDefinitions": 0,
+  "openingDateFields": 0,
+  "countryShipValues": 4,
+  "duplicateRCDBReviewCandidates": [
+    {
+      "rcdb": "https://rcdb.com/573.htm",
+      "rides": [
+        {
+          "id": "cp-4597",
+          "name": "Tree Top Racers",
+          "park": "Adventure City"
+        },
+        {
+          "id": "cp-40953",
+          "name": "Mighty Mouse",
+          "park": "Funtown Pier"
+        }
+      ],
+      "classification": "Unreviewed: may be aliases, relocations, rebuilds or incorrect source identifiers; do not merge automatically."
+    },
+    {
+      "rcdb": "https://rcdb.com/9207.htm",
+      "rides": [
+        {
+          "id": "cp-15931",
+          "name": "Wild Mouse",
+          "park": "Beech Bend"
+        },
+        {
+          "id": "cp-15237",
+          "name": "Galaxy Spin",
+          "park": "Fun Spot America"
+        }
+      ],
+      "classification": "Unreviewed: may be aliases, relocations, rebuilds or incorrect source identifiers; do not merge automatically."
+    },
+    {
+      "rcdb": "https://rcdb.com/4395.htm",
+      "rides": [
+        {
+          "id": "cp-6281",
+          "name": "L.A. Thompson Scenic Railway",
+          "park": "Bergen Beach"
+        },
+        {
+          "id": "cp-82636",
+          "name": "L.A. Thompson Scenic Railway",
+          "park": "Bergen Beach"
+        }
+      ],
+      "classification": "Unreviewed: may be aliases, relocations, rebuilds or incorrect source identifiers; do not merge automatically."
+    },
+    {
+      "rcdb": "https://rcdb.com/2040.htm",
+      "rides": [
+        {
+          "id": "cp-65399",
+          "name": "Clipper",
+          "park": "Coney Island"
+        },
+        {
+          "id": "cp-65449",
+          "name": "Shooting Star",
+          "park": "Coney Island"
+        }
+      ],
+      "classification": "Unreviewed: may be aliases, relocations, rebuilds or incorrect source identifiers; do not merge automatically."
+    },
+    {
+      "rcdb": "https://rcdb.com/12264.htm",
+      "rides": [
+        {
+          "id": "cp-15839",
+          "name": "Dragon Roller Coaster",
+          "park": "Energylandia"
+        },
+        {
+          "id": "cp-53108",
+          "name": "Draken",
+          "park": "Energylandia"
+        }
+      ],
+      "classification": "Unreviewed: may be aliases, relocations, rebuilds or incorrect source identifiers; do not merge automatically."
+    },
+    {
+      "rcdb": "https://rcdb.com/23539.htm",
+      "rides": [
+        {
+          "id": "cp-78136",
+          "name": "Triumph in the Skies",
+          "park": "Fantawild"
+        },
+        {
+          "id": "cp-82993",
+          "name": "Cloud Shuttle",
+          "park": "Fantawild Land"
+        }
+      ],
+      "classification": "Unreviewed: may be aliases, relocations, rebuilds or incorrect source identifiers; do not merge automatically."
+    },
+    {
+      "rcdb": "https://rcdb.com/22739.htm",
+      "rides": [
+        {
+          "id": "cp-82803",
+          "name": "Soaring Dragon",
+          "park": "Fantawild Oriental Legend"
+        },
+        {
+          "id": "cp-70347",
+          "name": "Soaring Dragon",
+          "park": "Ziyang Fantawild Oriental Legend"
+        }
+      ],
+      "classification": "Unreviewed: may be aliases, relocations, rebuilds or incorrect source identifiers; do not merge automatically."
+    },
+    {
+      "rcdb": "https://rcdb.com/9806.htm",
+      "rides": [
+        {
+          "id": "cp-78928",
+          "name": "Wilde Maus (2011)",
+          "park": "Freizeit-Land Geiselwind"
+        },
+        {
+          "id": "cp-10381",
+          "name": "Wilde Maus XXL",
+          "park": "Max Eberhard & Sohn"
+        }
+      ],
+      "classification": "Unreviewed: may be aliases, relocations, rebuilds or incorrect source identifiers; do not merge automatically."
+    },
+    {
+      "rcdb": "https://rcdb.com/3615.htm",
+      "rides": [
+        {
+          "id": "cp-79017",
+          "name": "Family Coaster",
+          "park": "Freizeitpark Plohn"
+        },
+        {
+          "id": "cp-52488",
+          "name": "Raupe",
+          "park": "Freizeitpark Plohn"
+        }
+      ],
+      "classification": "Unreviewed: may be aliases, relocations, rebuilds or incorrect source identifiers; do not merge automatically."
+    },
+    {
+      "rcdb": "https://rcdb.com/2182.htm",
+      "rides": [
+        {
+          "id": "cp-65509",
+          "name": "Looping",
+          "park": "Hili Fun City"
+        },
+        {
+          "id": "cp-76900",
+          "name": "Looping",
+          "park": "Hili Fun City"
+        }
+      ],
+      "classification": "Unreviewed: may be aliases, relocations, rebuilds or incorrect source identifiers; do not merge automatically."
+    },
+    {
+      "rcdb": "https://rcdb.com/123.htm",
+      "rides": [
+        {
+          "id": "cp-451",
+          "name": "Phantom's Revenge",
+          "park": "Kennywood"
+        },
+        {
+          "id": "cp-6483",
+          "name": "Steel Phantom",
+          "park": "Kennywood"
+        }
+      ],
+      "classification": "Unreviewed: may be aliases, relocations, rebuilds or incorrect source identifiers; do not merge automatically."
+    },
+    {
+      "rcdb": "https://rcdb.com/2170.htm",
+      "rides": [
+        {
+          "id": "cp-78541",
+          "name": "Azteka",
+          "park": "Le Pal"
+        },
+        {
+          "id": "cp-78542",
+          "name": "Azteka",
+          "park": "Le Pal"
+        }
+      ],
+      "classification": "Unreviewed: may be aliases, relocations, rebuilds or incorrect source identifiers; do not merge automatically."
+    },
+    {
+      "rcdb": "https://rcdb.com/3916.htm",
+      "rides": [
+        {
+          "id": "cp-15712",
+          "name": "Salama",
+          "park": "Linnanmäki"
+        },
+        {
+          "id": "cp-16042",
+          "name": "Tarántula",
+          "park": "Parque de Atracciones de Madrid"
+        }
+      ],
+      "classification": "Unreviewed: may be aliases, relocations, rebuilds or incorrect source identifiers; do not merge automatically."
+    },
+    {
+      "rcdb": "https://rcdb.com/415.htm",
+      "rides": [
+        {
+          "id": "cp-9686",
+          "name": "Zach's Zoomer",
+          "park": "Michigan's Adventure"
+        },
+        {
+          "id": "cp-22582",
+          "name": "Galaxi",
+          "park": "Sylvan Beach Amusement Park"
+        }
+      ],
+      "classification": "Unreviewed: may be aliases, relocations, rebuilds or incorrect source identifiers; do not merge automatically."
+    }
+  ],
+  "attribution": {
+    "source": "Coasterpedia and Wikidata",
+    "license": "CC-BY-SA-4.0",
+    "url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "notes": "Aggregate audit of the existing derived catalog. Coasterpedia contributors CC BY-SA 4.0; Wikidata contributors CC0."
+  }
+}

@@ -1,0 +1,87 @@
+name: Refresh public coaster catalog
+on:
+  schedule:
+    - cron: '23 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: 'Refresh normally, or rebuild from the full official API'
+        type: choice
+        options: [refresh, bootstrap]
+        default: refresh
+      publish:
+        description: 'Commit the validated catalog to main and deploy Pages (leave off to preview)'
+        type: boolean
+        default: false
+      approve_large_change:
+        description: 'Approve count/status changes after inspecting a previous preview report'
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: public-catalog
+  cancel-in-progress: false
+jobs:
+  refresh:
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || vars.TRACKLIST_CATALOG_AUTO_UPDATE == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: main
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - name: Fetch a complete candidate
+        env:
+          COASTERPEDIA_API_KEY: ${{ secrets.COASTERPEDIA_API_KEY }}
+          OPERATION: ${{ inputs.operation }}
+          APPROVE_LARGE_CHANGE: ${{ inputs.approve_large_change }}
+        shell: bash
+        run: |
+          args=()
+          if [[ "$OPERATION" == "bootstrap" ]]; then args+=(--bootstrap); fi
+          if [[ "$APPROVE_LARGE_CHANGE" == "true" ]]; then args+=(--approve-large-change); fi
+          node scripts/refresh-catalog.cjs "${args[@]}"
+      - name: Apply candidate in the temporary runner checkout
+        run: node scripts/catalog-files.cjs --apply
+      - run: npm test
+      - run: npm run build
+      - run: npm run security:check
+      - name: Save the review report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: catalog-review-${{ github.run_id }}
+          path: |
+            test-results/catalog-candidate/review.json
+            test-results/catalog-candidate/review.txt
+            test-results/catalog-candidate/catalog.json
+            test-results/catalog-candidate/catalog-manifest.json
+          if-no-files-found: ignore
+          retention-days: 1
+      - name: Publish the validated catalog and request Pages deployment
+        if: success() && (github.event_name == 'schedule' || inputs.publish == true)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          git fetch origin main
+          if [[ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]]; then
+            echo "main changed during the refresh. Rerun against the new main; nothing was pushed."
+            exit 1
+          fi
+          git add catalog.json catalog-manifest.json catalog-data.js catalog-sync/state.json
+          if ! git diff --cached --quiet; then
+            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'data: refresh public coaster catalog'
+            git push origin HEAD:main
+          fi
+          # GITHUB_TOKEN pushes do not trigger push workflows. Dispatch explicitly.
+          gh workflow run pages.yml --ref main

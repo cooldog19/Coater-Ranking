@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "catalogURL": "catalog.json",
+  "sha256": "5d13dd0c6eeb5a8d1459a75bc20ae216caf0a40bba146b34d1b21bd5f1b68f3f",
+  "datasetVersion": "5d13dd0c6eeb5a8d",
+  "datasetChangedAt": "2026-10-10T01:39:29.409Z",
+  "lastCheckedAt": null,
+  "initialized": false,
+  "mode": "legacy",
+  "counts": {
+    "rides": 4232,
+    "parks": 1710
+  },
+  "sources": [
+    {
+      "name": "Coasterpedia contributors",
+      "url": "https://coasterpedia.net/",
+      "license": "CC-BY-SA-4.0"
+    },
+    {
+      "name": "Wikidata contributors",
+      "url": "https://www.wikidata.org/",
+      "license": "CC0-1.0",
+      "refresh": "retained supplement; separate refresh required"
+    }
+  ]
+}

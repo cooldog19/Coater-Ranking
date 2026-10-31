@@ -10,8 +10,10 @@
   ]);
   const unknown=value=>!value||['unknown','other','notlisted','notspecified','na'].includes(fold(value));
   const countryNames=new Map([['usa','United States'],['us','United States'],['unitedstatesofamerica','United States'],['uk','United Kingdom'],['greatbritain','United Kingdom'],['england','United Kingdom'],['scotland','United Kingdom'],['wales','United Kingdom'],['northernireland','United Kingdom']]);
-  function analyze(state,catalog=root.TRACKLIST_CATALOG?.rides||[],locations=root.TRACKLIST_PARK_MAP?.parks||[]){
-    const clean=C.normalize(state),byId=new Map(catalog.map(r=>[r.id,r])),byRCDB=new Map(catalog.filter(r=>r.rcdb).map(r=>[r.rcdb,r]));
+  function catalogLocations(){const official=(root.TRACKLIST_CATALOG?.parks||[]).filter(p=>p.coordinates).map(p=>({...p,lat:p.coordinates.lat,lon:p.coordinates.lon})),keys=new Set(official.map(p=>fold(p.name)+'|'+fold(p.country)));return official.concat((root.TRACKLIST_PARK_MAP?.parks||[]).filter(p=>!keys.has(fold(p.name)+'|'+fold(p.country))));}
+  function analyze(state,catalog=root.TRACKLIST_CATALOG?.rides||[],locations=catalogLocations()){
+    const clean=C.normalize(state),byId=new Map(catalog.map(r=>[r.id,r])),byRCDB=new Map();
+    for(const r of catalog){for(const legacy of r.legacyIds||[])if(!byId.has(legacy))byId.set(legacy,r);if(r.rcdb)byRCDB.set(r.rcdb,byRCDB.has(r.rcdb)?null:r);}
     const locById=new Map(locations.map(p=>[p.id,p])),locByName=new Map();
     for(const p of locations)for(const label of [p.name,...(p.aliases||[])]){const key=K.parkKey({park:label});if(!locByName.has(key))locByName.set(key,[]);if(!locByName.get(key).some(r=>r.id===p.id))locByName.get(key).push(p);}
     function placeFor(name,country,parkId){let place=locById.get(parkId);if(!place){let matches=locByName.get(K.parkKey({park:name}))||[];if(country){const exact=matches.filter(p=>fold(p.country)===fold(country));matches=exact.length?exact:matches.filter(p=>!p.country);}if(matches.length===1)place=matches[0];}

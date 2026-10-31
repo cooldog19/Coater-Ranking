@@ -2,13 +2,14 @@ const {test}=require('node:test'),assert=require('node:assert/strict'),fs=requir
 const {JSDOM}=require('jsdom'),C=require('../core.js'),K=require('../catalog.js'),M=require('../migration.js'),R=require('../recovery.js');
 const {parse:parseArticle}=require('../scripts/update-coasterpedia.cjs');
 const root=path.resolve(__dirname,'..'),KEY='tracklist.collection.v1';
-function app(t,{denyStorage=false,mockAccount=false}={}){
+function app(t,{denyStorage=false,mockAccount=false,catalogOverride=null}={}){
   const dom=new JSDOM(fs.readFileSync(path.join(root,'index.html'),'utf8'),{url:'https://example.test/Coater-Ranking/',runScripts:'outside-only',pretendToBeVisual:true}),w=dom.window,errors=[];
   w.addEventListener('error',e=>errors.push(e.error));w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;};
   w.URL.createObjectURL=()=> 'blob:test';w.URL.revokeObjectURL=()=>{};w.HTMLAnchorElement.prototype.click=function(){};
   w.localStorage.setItem(KEY,JSON.stringify({version:1,rides:[]}));
   if(denyStorage)Object.defineProperty(w,'localStorage',{get(){throw new w.DOMException('Storage blocked','SecurityError');}});
   for(const file of ['core.js','catalog-data.js','catalog.js','migration.js','recovery.js','sync-model.js','cloud.js','app.js'])w.eval(fs.readFileSync(path.join(root,file),'utf8'));
+  if(catalogOverride)w.TRACKLIST_CATALOG=catalogOverride;
   let mock;
   if(mockAccount){let callbacks,controller,head=null,cloudState=null;mock={denied:false};
     const adapter={watch:(uid,onHead,onError)=>{queueMicrotask(()=>mock.denied?onError(Error('Account saving was blocked by database permissions.')):onHead(head));return()=>{};},write:async(uid,base,revision,state)=>{cloudState=state;return head={revision};},read:async()=>cloudState};
@@ -20,6 +21,13 @@ function app(t,{denyStorage=false,mockAccount=false}={}){
   t.after(()=>{w.close();assert.deepEqual(errors,[]);});
   return {w,doc:w.document,A:w.TracklistApp,mock,state:()=>JSON.parse(w.localStorage.getItem(w.TracklistApp.getStorageKey())),click:selector=>{const el=w.document.querySelector(selector);assert(el,selector);el.click();},input:(id,value)=>{const el=w.document.getElementById(id);assert(el,id);el.value=value;el.dispatchEvent(new w.Event('input',{bubbles:true}));},submit:id=>w.document.getElementById(id).dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}))};
 }
+test('API catalog renames keep old credits recognized, prevent duplicate adding and retain saved park inventories',t=>{
+  const record={id:'cp-900001',legacyIds:['cp-900000'],name:'Renamed ride',park:'New Park',parkId:'cp-park-900',country:'United States',manufacturer:'Maker',type:'Steel',status:'Operating',source:'https://coasterpedia.net/wiki/Ride'},data={version:1,updatedAt:'2026-10-31T00:00:00Z',source:'Coasterpedia',sourceURL:'https://coasterpedia.net/',license:'CC-BY-SA-4.0',licenseURL:'https://creativecommons.org/licenses/by-sa/4.0/',rides:[record],parks:[{id:record.parkId,name:'New Park',aliases:['Old Park'],country:'United States'}]};
+  const a=app(t,{catalogOverride:data});a.A.change({rides:[C.ride({id:'mine',catalogId:'cp-900000',name:'Old ride',park:'Old Park',notes:'My memory',ranked:true})],parkWishlist:[{id:'oldpark',name:'Old Park',country:'United States'}]},'');
+  a.A.setView('explore');a.input('catalog-search','New Park');a.click('[data-park-id]');assert.equal(a.doc.querySelector('[data-catalog-action="log"]'),null);assert.match(a.doc.getElementById('explore-panel').textContent,/Ranked #1/);
+  a.A.setView('wishlist');a.click('[data-wish-park]');assert.match(a.doc.querySelector('.wish-park-detail').textContent,/Renamed ride/);
+  a.A.setView('all');a.click('#add-button');a.input('add-catalog-search','Renamed ride');a.click('[data-autofill]');a.click('#save-new-credit');assert.match(a.doc.getElementById('form-error').textContent,/already in Credits/);assert.equal(a.state().rides.length,1);assert.equal(a.state().rides[0].notes,'My memory');assert.equal(a.state().rides[0].name,'Old ride');
+});
 test('catalog browse, plan, log, duplicate prevention and rank placement work together',t=>{
   const a=app(t);a.A.setView('explore');a.input('catalog-search','Cedar Point');a.click('[data-park-id]');
   const record=a.w.TRACKLIST_CATALOG.rides.find(r=>r.name==='Steel Vengeance'&&r.park==='Cedar Point'),card=`[data-catalog-id="${record.id}"]`;
