@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "version": 1,
-  "updatedAt": "2026-10-31T16:33:58.425Z",
+  "updatedAt": "2026-10-31T21:45:28.686Z",
   "source": "Coasterpedia and Wikidata",
   "sourceURL": "https://coasterpedia.net/",
   "license": "CC-BY-SA-4.0",
@@ -86318,9 +86318,9 @@
     {
       "sourceId": 43928,
       "name": "Wild Train",
-      "sourceRevision": 490577,
-      "sourceUpdatedAt": "2026-10-19T16:44:26.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=Wild%20Train%20(Fantasiana)&oldid=490577",
+      "sourceRevision": 529146,
+      "sourceUpdatedAt": "2026-10-31T19:33:39.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Wild%20Train%20(Fantasiana)&oldid=529146",
       "license": "CC-BY-SA-4.0",
       "id": "cp-43928",
       "aliases": [],
@@ -86353,9 +86353,9 @@
           "latest": "2005-04-23"
         },
         "closed": {
-          "edtf": "2024-10-31",
-          "earliest": "2024-10-31",
-          "latest": "2024-10-31"
+          "edtf": "2024-11-02",
+          "earliest": "2024-11-02",
+          "latest": "2024-11-02"
         }
       },
       "rcdb": "https://rcdb.com/2775.htm",
@@ -161950,9 +161950,9 @@
     {
       "sourceId": 82125,
       "name": "Figure 8",
-      "sourceRevision": 487758,
-      "sourceUpdatedAt": "2026-10-13T12:28:06.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=Figure%208%20(Coney%20Island)&oldid=487758",
+      "sourceRevision": 529133,
+      "sourceUpdatedAt": "2026-10-31T19:31:08.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Figure%208%20(Coney%20Island)&oldid=529133",
       "license": "CC-BY-SA-4.0",
       "id": "cp-82125",
       "aliases": [],
@@ -161977,9 +161977,9 @@
       "sourceStatus": "defunct",
       "dates": {
         "opened": {
-          "edtf": "1900",
+          "edtf": "190X",
           "earliest": "1900-01-01",
-          "latest": "1900-12-31"
+          "latest": "1909-12-31"
         },
         "closed": {
           "edtf": "1918",
@@ -161995,9 +161995,9 @@
     {
       "sourceId": 82126,
       "name": "Greyhound",
-      "sourceRevision": 488100,
-      "sourceUpdatedAt": "2026-10-13T12:28:06.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=Greyhound&oldid=488100",
+      "sourceRevision": 529128,
+      "sourceUpdatedAt": "2026-10-31T19:31:08.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Greyhound&oldid=529128",
       "license": "CC-BY-SA-4.0",
       "id": "cp-82126",
       "aliases": [],
@@ -162017,8 +162017,8 @@
       "sourceStatus": "defunct",
       "dates": {
         "opened": {
-          "edtf": "1929",
-          "earliest": "1929-01-01",
+          "edtf": "[..1929]",
+          "earliest": null,
           "latest": "1929-12-31"
         },
         "closed": {
@@ -176742,9 +176742,9 @@
     {
       "sourceId": 86379,
       "name": "Little Dipper",
-      "sourceRevision": 488593,
-      "sourceUpdatedAt": "2026-10-13T12:28:06.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=Little%20Dipper%20(Crystal%20Beach%20Park%3B%20opened%201977)&oldid=488593",
+      "sourceRevision": 529023,
+      "sourceUpdatedAt": "2026-10-31T18:32:51.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Little%20Dipper%20(Crystal%20Beach%20Park%3B%20opened%201977)&oldid=529023",
       "license": "CC-BY-SA-4.0",
       "id": "cp-86379",
       "aliases": [],
@@ -176781,7 +176781,9 @@
       },
       "rcdb": "https://rcdb.com/1857.htm",
       "pov": "",
-      "categories": [],
+      "categories": [
+        "Kiddie"
+      ],
       "trackCount": 1
     },
     {
@@ -189773,9 +189775,9 @@
     {
       "sourceId": 92540,
       "name": "Feng Shen Coaster",
-      "sourceRevision": 528806,
-      "sourceUpdatedAt": "2026-10-31T14:41:12.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=Feng%20Shen%20Coaster&oldid=528806",
+      "sourceRevision": 529012,
+      "sourceUpdatedAt": "2026-10-31T18:25:36.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Feng%20Shen%20Coaster&oldid=529012",
       "license": "CC-BY-SA-4.0",
       "id": "cp-92540",
       "aliases": [],
@@ -190044,9 +190046,9 @@
     {
       "sourceId": 92546,
       "name": "Family Roller Coaster",
-      "sourceRevision": 528822,
-      "sourceUpdatedAt": "2026-10-31T14:52:13.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=Family%20Roller%20Coaster%20(Beijing%20Shijingshan%20Amusement%20Park)&oldid=528822",
+      "sourceRevision": 529063,
+      "sourceUpdatedAt": "2026-10-31T18:58:07.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Family%20Roller%20Coaster%20(Beijing%20Shijingshan%20Amusement%20Park)&oldid=529063",
       "license": "CC-BY-SA-4.0",
       "id": "cp-92546",
       "aliases": [],
@@ -190083,15 +190085,17 @@
       },
       "rcdb": "",
       "pov": "",
-      "categories": [],
+      "categories": [
+        "Suspended"
+      ],
       "trackCount": 1
     },
     {
       "sourceId": 92547,
       "name": "Space Roller Coaster",
-      "sourceRevision": 528826,
-      "sourceUpdatedAt": "2026-10-31T14:53:43.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=Space%20Roller%20Coaster&oldid=528826",
+      "sourceRevision": 528955,
+      "sourceUpdatedAt": "2026-10-31T17:24:59.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Space%20Roller%20Coaster&oldid=528955",
       "license": "CC-BY-SA-4.0",
       "id": "cp-92547",
       "aliases": [],
@@ -211571,9 +211575,9 @@
     {
       "sourceId": 44780,
       "name": "Drouwenerzand Attractiepark",
-      "sourceRevision": 472493,
-      "sourceUpdatedAt": "2026-10-12T15:34:31.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=Drouwenerzand%20Attractiepark&oldid=472493",
+      "sourceRevision": 528922,
+      "sourceUpdatedAt": "2026-10-31T16:38:14.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Drouwenerzand%20Attractiepark&oldid=528922",
       "license": "CC-BY-SA-4.0",
       "id": "cp-park-44780",
       "country": "Netherlands",
@@ -233459,9 +233463,9 @@
     {
       "sourceId": 71087,
       "name": "De Waarbeek",
-      "sourceRevision": 462140,
-      "sourceUpdatedAt": "2026-10-12T15:34:31.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=De%20Waarbeek&oldid=462140",
+      "sourceRevision": 528923,
+      "sourceUpdatedAt": "2026-10-31T16:38:14.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=De%20Waarbeek&oldid=528923",
       "license": "CC-BY-SA-4.0",
       "id": "cp-park-71087",
       "country": "Netherlands",
