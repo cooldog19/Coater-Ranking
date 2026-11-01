@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "version": 1,
-  "updatedAt": "2026-10-31T21:45:28.686Z",
+  "updatedAt": "2026-11-01T06:27:38.658Z",
   "source": "Coasterpedia and Wikidata",
   "sourceURL": "https://coasterpedia.net/",
   "license": "CC-BY-SA-4.0",
@@ -89908,13 +89908,15 @@
     },
     {
       "sourceId": 45168,
-      "name": "Worm Train (Al Qasba)",
-      "sourceRevision": 487503,
-      "sourceUpdatedAt": "2026-10-13T12:28:06.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=Dragon%20Mini%20Train&oldid=487503",
+      "name": "Worm Train",
+      "sourceRevision": 529328,
+      "sourceUpdatedAt": "2026-11-01T00:03:35.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Dragon%20Mini%20Train&oldid=529328",
       "license": "CC-BY-SA-4.0",
       "id": "cp-45168",
-      "aliases": [],
+      "aliases": [
+        "Worm Train (Al Qasba)"
+      ],
       "legacyIds": [],
       "park": "Al Qasba",
       "parkId": "",
@@ -89939,9 +89941,9 @@
       "sourceStatus": "operating",
       "dates": {
         "opened": {
-          "edtf": "2017",
-          "earliest": "2017-01-01",
-          "latest": "2017-12-31"
+          "edtf": "[2010..2011]",
+          "earliest": "2010-01-01",
+          "latest": "2011-12-31"
         }
       },
       "rcdb": "https://rcdb.com/19203.htm",
@@ -237344,9 +237346,9 @@
     {
       "sourceId": 73767,
       "name": "Blackpool Tower",
-      "sourceRevision": 464161,
-      "sourceUpdatedAt": "2026-10-13T12:28:06.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=Blackpool%20Tower&oldid=464161",
+      "sourceRevision": 529557,
+      "sourceUpdatedAt": "2026-11-01T03:19:58.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Blackpool%20Tower&oldid=529557",
       "license": "CC-BY-SA-4.0",
       "id": "cp-park-73767",
       "country": "United Kingdom",
