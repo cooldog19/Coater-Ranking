@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "version": 1,
-  "updatedAt": "2026-11-01T06:27:38.658Z",
+  "updatedAt": "2026-11-01T17:59:45.680Z",
   "source": "Coasterpedia and Wikidata",
   "sourceURL": "https://coasterpedia.net/",
   "license": "CC-BY-SA-4.0",
@@ -8338,9 +8338,9 @@
     {
       "sourceId": 11111,
       "name": "Icon",
-      "sourceRevision": 488222,
-      "sourceUpdatedAt": "2026-10-24T08:44:17.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=Icon&oldid=488222",
+      "sourceRevision": 529684,
+      "sourceUpdatedAt": "2026-11-01T15:19:43.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Icon&oldid=529684",
       "license": "CC-BY-SA-4.0",
       "id": "cp-11111",
       "aliases": [],
@@ -12668,7 +12668,10 @@
       "park": "Verkeers- en Attractiepark Duinen Zathe",
       "parkId": "cp-park-17198",
       "sourceParkId": 17198,
-      "parkAliases": [],
+      "parkAliases": [
+        "Attractiepark Duinen Zathe",
+        "Verkeers- en Attractiepark Duinen Zathe"
+      ],
       "country": "Netherlands",
       "countryCode": "NL",
       "locationKind": "park",
@@ -36343,7 +36346,10 @@
       "park": "Verkeers- en Attractiepark Duinen Zathe",
       "parkId": "cp-park-17198",
       "sourceParkId": 17198,
-      "parkAliases": [],
+      "parkAliases": [
+        "Attractiepark Duinen Zathe",
+        "Verkeers- en Attractiepark Duinen Zathe"
+      ],
       "country": "Netherlands",
       "countryCode": "NL",
       "locationKind": "park",
@@ -63468,12 +63474,14 @@
     {
       "sourceId": 3152,
       "name": "Accelerator",
-      "sourceRevision": 486547,
-      "sourceUpdatedAt": "2026-10-19T16:44:26.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=Accelerator%20(Drayton%20Manor%20Resort)&oldid=486547",
+      "sourceRevision": 529747,
+      "sourceUpdatedAt": "2026-11-01T16:16:30.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Accelerator%20(Drayton%20Manor%20Resort)&oldid=529747",
       "license": "CC-BY-SA-4.0",
       "id": "cp-3152",
-      "aliases": [],
+      "aliases": [
+        "Ben 10 Ultimate Mission"
+      ],
       "legacyIds": [],
       "park": "Drayton Manor Resort",
       "parkId": "cp-park-2334",
@@ -101434,9 +101442,9 @@
     {
       "sourceId": 4958,
       "name": "Goliath",
-      "sourceRevision": 488026,
-      "sourceUpdatedAt": "2026-10-19T16:44:26.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=Goliath%20(Walibi%20Holland)&oldid=488026",
+      "sourceRevision": 529775,
+      "sourceUpdatedAt": "2026-11-01T16:27:30.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Goliath%20(Walibi%20Holland)&oldid=529775",
       "license": "CC-BY-SA-4.0",
       "id": "cp-4958",
       "aliases": [],
@@ -157245,9 +157253,9 @@
     {
       "sourceId": 79020,
       "name": "Hexenbesen",
-      "sourceRevision": 488149,
-      "sourceUpdatedAt": "2026-10-19T16:44:26.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=Hexenbesen&oldid=488149",
+      "sourceRevision": 529815,
+      "sourceUpdatedAt": "2026-11-01T16:46:16.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Hexenbesen%20(Erlebnisfelsen%20Pottenstein)&oldid=529815",
       "license": "CC-BY-SA-4.0",
       "id": "cp-79020",
       "aliases": [],
@@ -162079,9 +162087,9 @@
     {
       "sourceId": 82128,
       "name": "Ipanema Skate Ride",
-      "sourceRevision": 488247,
-      "sourceUpdatedAt": "2026-10-13T12:28:06.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=Ipanema%20Skate%20Ride&oldid=488247",
+      "sourceRevision": 529754,
+      "sourceUpdatedAt": "2026-11-01T16:19:45.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Ipanema%20Skate%20Ride&oldid=529754",
       "license": "CC-BY-SA-4.0",
       "id": "cp-82128",
       "aliases": [],
@@ -162118,17 +162126,20 @@
     },
     {
       "sourceId": 82129,
-      "name": "Spartan Race",
-      "sourceRevision": 489716,
-      "sourceUpdatedAt": "2026-10-13T12:28:06.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=Spartan%20Race&oldid=489716",
+      "name": "Dolphin Roller Coaster",
+      "sourceRevision": 529742,
+      "sourceUpdatedAt": "2026-11-01T16:13:45.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Dolphin%20Roller%20Coaster%20(VinWonders%20Grand%20Park)&oldid=529742",
       "license": "CC-BY-SA-4.0",
       "id": "cp-82129",
-      "aliases": [],
+      "aliases": [
+        "Flying Dolphin Coaster",
+        "Spartan Race"
+      ],
       "legacyIds": [],
-      "park": "VinWonders",
-      "parkId": "cp-park-27775",
-      "sourceParkId": 27775,
+      "park": "VinWonders Grand Park",
+      "parkId": "",
+      "sourceParkId": null,
       "parkAliases": [],
       "country": "Vietnam",
       "countryCode": "VN",
@@ -162142,18 +162153,13 @@
         }
       ],
       "type": "Steel",
-      "status": "Defunct",
-      "sourceStatus": "defunct",
+      "status": "Operating",
+      "sourceStatus": "operating",
       "dates": {
         "opened": {
-          "edtf": "2015",
-          "earliest": "2015-01-01",
-          "latest": "2015-12-31"
-        },
-        "closed": {
-          "edtf": "2023",
-          "earliest": "2023-01-01",
-          "latest": "2023-12-31"
+          "edtf": "2024-12-06",
+          "earliest": "2024-12-06",
+          "latest": "2024-12-06"
         }
       },
       "rcdb": "https://rcdb.com/18027.htm",
@@ -162206,12 +162212,14 @@
     {
       "sourceId": 82131,
       "name": "Fort d'Odin",
-      "sourceRevision": 487860,
-      "sourceUpdatedAt": "2026-10-13T12:28:06.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=Fort%20d'Odin&oldid=487860",
+      "sourceRevision": 529756,
+      "sourceUpdatedAt": "2026-11-01T16:21:15.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Fort%20d'Odin&oldid=529756",
       "license": "CC-BY-SA-4.0",
       "id": "cp-82131",
-      "aliases": [],
+      "aliases": [
+        "Train de Mine"
+      ],
       "legacyIds": [],
       "park": "Parc du Bocasse",
       "parkId": "cp-park-42625",
@@ -162236,9 +162244,9 @@
       "sourceStatus": "operating",
       "dates": {
         "opened": {
-          "edtf": "2004-08-01",
+          "edtf": "2004-08",
           "earliest": "2004-08-01",
-          "latest": "2004-08-01"
+          "latest": "2004-08-31"
         }
       },
       "rcdb": "https://rcdb.com/2896.htm",
@@ -162249,9 +162257,9 @@
     {
       "sourceId": 82133,
       "name": "Jurassic Twister",
-      "sourceRevision": 488394,
-      "sourceUpdatedAt": "2026-10-13T12:28:06.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=Jurassic%20Twister&oldid=488394",
+      "sourceRevision": 529758,
+      "sourceUpdatedAt": "2026-11-01T16:21:15.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Jurassic%20Twister&oldid=529758",
       "license": "CC-BY-SA-4.0",
       "id": "cp-82133",
       "aliases": [],
@@ -162292,9 +162300,9 @@
     {
       "sourceId": 82135,
       "name": "Pirate's Coaster",
-      "sourceRevision": 489075,
-      "sourceUpdatedAt": "2026-10-13T12:28:06.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=Pirate's%20Coaster&oldid=489075",
+      "sourceRevision": 529759,
+      "sourceUpdatedAt": "2026-11-01T16:22:45.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Pirate's%20Coaster&oldid=529759",
       "license": "CC-BY-SA-4.0",
       "id": "cp-82135",
       "aliases": [],
@@ -162334,9 +162342,9 @@
     {
       "sourceId": 82136,
       "name": "Speedy Gonzales",
-      "sourceRevision": 489764,
-      "sourceUpdatedAt": "2026-10-13T12:28:06.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=Speedy%20Gonzales%20(Parc%20du%20Bocasse)&oldid=489764",
+      "sourceRevision": 529761,
+      "sourceUpdatedAt": "2026-11-01T16:22:45.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Speedy%20Gonzales%20(Parc%20du%20Bocasse)&oldid=529761",
       "license": "CC-BY-SA-4.0",
       "id": "cp-82136",
       "aliases": [],
@@ -162376,9 +162384,9 @@
     {
       "sourceId": 82150,
       "name": "Requin",
-      "sourceRevision": 489221,
-      "sourceUpdatedAt": "2026-10-13T12:28:06.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=Requin&oldid=489221",
+      "sourceRevision": 529776,
+      "sourceUpdatedAt": "2026-11-01T16:27:30.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Requin&oldid=529776",
       "license": "CC-BY-SA-4.0",
       "id": "cp-82150",
       "aliases": [],
@@ -162410,7 +162418,9 @@
       },
       "rcdb": "https://rcdb.com/18706.htm",
       "pov": "",
-      "categories": [],
+      "categories": [
+        "Kiddie"
+      ],
       "trackCount": 1
     },
     {
@@ -162579,9 +162589,9 @@
     {
       "sourceId": 82166,
       "name": "Spacerunner",
-      "sourceRevision": 496551,
-      "sourceUpdatedAt": "2026-10-26T23:33:38.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=Spacerunner&oldid=496551",
+      "sourceRevision": 529778,
+      "sourceUpdatedAt": "2026-11-01T16:27:30.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Spacerunner&oldid=529778",
       "license": "CC-BY-SA-4.0",
       "id": "cp-82166",
       "aliases": [],
@@ -162711,9 +162721,9 @@
     {
       "sourceId": 82173,
       "name": "Pomme",
-      "sourceRevision": 489120,
-      "sourceUpdatedAt": "2026-10-13T12:28:06.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=Pomme%20(Parc%20Saint%20Paul)&oldid=489120",
+      "sourceRevision": 529780,
+      "sourceUpdatedAt": "2026-11-01T16:29:15.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Pomme%20(Parc%20Saint%20Paul)&oldid=529780",
       "license": "CC-BY-SA-4.0",
       "id": "cp-82173",
       "aliases": [],
@@ -162729,11 +162739,11 @@
         "lat": 49.42144,
         "lon": 1.982333
       },
-      "manufacturer": "DAL Amusement Rides Company",
+      "manufacturer": "DAL Amusement Rides",
       "manufacturerRefs": [
         {
-          "id": null,
-          "name": "DAL Amusement Rides Company"
+          "id": 83204,
+          "name": "DAL Amusement Rides"
         }
       ],
       "type": "Steel",
@@ -162754,9 +162764,9 @@
     {
       "sourceId": 82178,
       "name": "Crazy Mouse",
-      "sourceRevision": 487272,
-      "sourceUpdatedAt": "2026-10-19T16:44:26.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=Crazy%20Mouse%20(Degous%C3%A9e)&oldid=487272",
+      "sourceRevision": 529805,
+      "sourceUpdatedAt": "2026-11-01T16:39:31.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Crazy%20Mouse%20(Degous%C3%A9e)&oldid=529805",
       "license": "CC-BY-SA-4.0",
       "id": "cp-82178",
       "aliases": [],
@@ -164339,9 +164349,9 @@
     {
       "sourceId": 82783,
       "name": "Cars",
-      "sourceRevision": 487062,
-      "sourceUpdatedAt": "2026-10-19T16:44:26.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=Cars&oldid=487062",
+      "sourceRevision": 529810,
+      "sourceUpdatedAt": "2026-11-01T16:42:46.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Cars&oldid=529810",
       "license": "CC-BY-SA-4.0",
       "id": "cp-82783",
       "aliases": [],
@@ -164491,9 +164501,9 @@
     {
       "sourceId": 82794,
       "name": "Big Apple",
-      "sourceRevision": 486824,
-      "sourceUpdatedAt": "2026-10-19T16:44:26.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=Big%20Apple%20(Jerry%20Ropers)&oldid=486824",
+      "sourceRevision": 529841,
+      "sourceUpdatedAt": "2026-11-01T17:23:02.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Big%20Apple%20(Jerry%20Ropers)&oldid=529841",
       "license": "CC-BY-SA-4.0",
       "id": "cp-82794",
       "aliases": [],
@@ -164519,15 +164529,17 @@
       "dates": {},
       "rcdb": "",
       "pov": "https://www.youtube.com/watch?v=V8KvlysjmcA",
-      "categories": [],
+      "categories": [
+        "Kiddie"
+      ],
       "trackCount": 1
     },
     {
       "sourceId": 82795,
       "name": "Canyon",
-      "sourceRevision": 487018,
-      "sourceUpdatedAt": "2026-10-19T16:44:26.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=Canyon&oldid=487018",
+      "sourceRevision": 529842,
+      "sourceUpdatedAt": "2026-11-01T17:23:02.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Canyon&oldid=529842",
       "license": "CC-BY-SA-4.0",
       "id": "cp-82795",
       "aliases": [],
@@ -164559,9 +164571,9 @@
     {
       "sourceId": 82797,
       "name": "Spyro",
-      "sourceRevision": 489820,
-      "sourceUpdatedAt": "2026-10-19T16:44:26.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=Spyro&oldid=489820",
+      "sourceRevision": 529799,
+      "sourceUpdatedAt": "2026-11-01T16:34:15.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Spyro&oldid=529799",
       "license": "CC-BY-SA-4.0",
       "id": "cp-82797",
       "aliases": [
@@ -164576,11 +164588,11 @@
       "countryCode": "BE",
       "locationKind": "travelling",
       "coordinates": null,
-      "manufacturer": "DAL Amusement Rides Company",
+      "manufacturer": "DAL Amusement Rides",
       "manufacturerRefs": [
         {
-          "id": null,
-          "name": "DAL Amusement Rides Company"
+          "id": 83204,
+          "name": "DAL Amusement Rides"
         }
       ],
       "type": "Steel",
@@ -164601,9 +164613,9 @@
     {
       "sourceId": 82798,
       "name": "Zig Zag",
-      "sourceRevision": 490689,
-      "sourceUpdatedAt": "2026-10-13T12:28:06.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=Zig%20Zag%20(Louis%20%26%20Ellie%20Delforge)&oldid=490689",
+      "sourceRevision": 529768,
+      "sourceUpdatedAt": "2026-11-01T16:26:00.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Zig%20Zag%20(Louis%20%26%20Ellie%20Delforge)&oldid=529768",
       "license": "CC-BY-SA-4.0",
       "id": "cp-82798",
       "aliases": [
@@ -190270,6 +190282,92 @@
       "trackCount": 1
     },
     {
+      "sourceId": 92613,
+      "name": "Alpine Mountain Coaster",
+      "sourceRevision": 529623,
+      "sourceUpdatedAt": "2026-11-01T13:08:25.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Alpine%20Mountain%20Coaster&oldid=529623",
+      "license": "CC-BY-SA-4.0",
+      "id": "cp-92613",
+      "aliases": [],
+      "legacyIds": [],
+      "park": "Mountain Creek Waterpark",
+      "parkId": "cp-park-92612",
+      "sourceParkId": 92612,
+      "parkAliases": [
+        "Action Park",
+        "Mountain Creek Waterpark"
+      ],
+      "country": "United States",
+      "countryCode": "US",
+      "locationKind": "park",
+      "coordinates": {
+        "lat": 41.19013576071,
+        "lon": -74.506447190203
+      },
+      "manufacturer": "Wiegand",
+      "manufacturerRefs": [
+        {
+          "id": 8270,
+          "name": "Wiegand"
+        }
+      ],
+      "type": "Steel",
+      "status": "Operating",
+      "sourceStatus": "operating",
+      "dates": {
+        "opened": {
+          "edtf": "2011",
+          "earliest": "2011-01-01",
+          "latest": "2011-12-31"
+        }
+      },
+      "rcdb": "",
+      "pov": "",
+      "categories": [],
+      "trackCount": 1
+    },
+    {
+      "sourceId": 92617,
+      "name": "Dip the Dips",
+      "sourceRevision": 529629,
+      "sourceUpdatedAt": "2026-11-01T13:26:10.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Dip%20the%20Dips%20(Coney%20Island%20-%201918)&oldid=529629",
+      "license": "CC-BY-SA-4.0",
+      "id": "cp-92617",
+      "aliases": [],
+      "legacyIds": [],
+      "park": "Coney Island",
+      "parkId": "cp-park-15025",
+      "sourceParkId": 15025,
+      "parkAliases": [],
+      "country": "United States",
+      "countryCode": "US",
+      "locationKind": "park",
+      "coordinates": null,
+      "manufacturer": "",
+      "manufacturerRefs": [],
+      "type": "Other",
+      "status": "Defunct",
+      "sourceStatus": "defunct",
+      "dates": {
+        "opened": {
+          "edtf": "1918",
+          "earliest": "1918-01-01",
+          "latest": "1918-12-31"
+        },
+        "closed": {
+          "edtf": "1925",
+          "earliest": "1925-01-01",
+          "latest": "1925-12-31"
+        }
+      },
+      "rcdb": "",
+      "pov": "",
+      "categories": [],
+      "trackCount": 1
+    },
+    {
       "sourceId": 9265,
       "name": "Wacky Soap Box Racers",
       "sourceRevision": 490435,
@@ -190343,6 +190441,46 @@
       ]
     },
     {
+      "sourceId": 92660,
+      "name": "Alpine Slide",
+      "sourceRevision": 529717,
+      "sourceUpdatedAt": "2026-11-01T15:54:14.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Alpine%20Slide%20(Mountain%20Creek%20Waterpark)&oldid=529717",
+      "license": "CC-BY-SA-4.0",
+      "id": "cp-92660",
+      "aliases": [],
+      "legacyIds": [],
+      "park": "Mountain Creek Waterpark",
+      "parkId": "cp-park-92612",
+      "sourceParkId": 92612,
+      "parkAliases": [
+        "Action Park",
+        "Mountain Creek Waterpark"
+      ],
+      "country": "United States",
+      "countryCode": "US",
+      "locationKind": "park",
+      "coordinates": null,
+      "manufacturer": "",
+      "manufacturerRefs": [],
+      "type": "Other",
+      "status": "Defunct",
+      "sourceStatus": "defunct",
+      "dates": {
+        "opened": {
+          "edtf": "1976",
+          "earliest": "1976-01-01",
+          "latest": "1976-12-31"
+        }
+      },
+      "rcdb": "",
+      "pov": "",
+      "categories": [
+        "Bobsled"
+      ],
+      "trackCount": 1
+    },
+    {
       "sourceId": 9267,
       "name": "Turbine",
       "sourceRevision": 493727,
@@ -190392,6 +190530,46 @@
         "Shuttle",
         "Enclosed"
       ],
+      "trackCount": 1
+    },
+    {
+      "sourceId": 92682,
+      "name": "Hexenbesen",
+      "sourceRevision": 529818,
+      "sourceUpdatedAt": "2026-11-01T16:46:16.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Hexenbesen%20(Ski-%20und%20Rodelarena%20Wasserkuppe)&oldid=529818",
+      "license": "CC-BY-SA-4.0",
+      "id": "cp-92682",
+      "aliases": [],
+      "legacyIds": [],
+      "park": "Ski- und Rodelarena Wasserkuppe",
+      "parkId": "",
+      "sourceParkId": null,
+      "parkAliases": [],
+      "country": "Germany",
+      "countryCode": "DE",
+      "locationKind": "park",
+      "coordinates": null,
+      "manufacturer": "Wiegand",
+      "manufacturerRefs": [
+        {
+          "id": 8270,
+          "name": "Wiegand"
+        }
+      ],
+      "type": "Steel",
+      "status": "Operating",
+      "sourceStatus": "operating",
+      "dates": {
+        "opened": {
+          "edtf": "2007",
+          "earliest": "2007-01-01",
+          "latest": "2007-12-31"
+        }
+      },
+      "rcdb": "",
+      "pov": "",
+      "categories": [],
       "trackCount": 1
     },
     {
@@ -200952,9 +201130,9 @@
     {
       "sourceId": 17198,
       "name": "Verkeers- en Attractiepark Duinen Zathe",
-      "sourceRevision": 484541,
-      "sourceUpdatedAt": "2026-10-12T15:34:31.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=Verkeers-%20en%20Attractiepark%20Duinen%20Zathe&oldid=484541",
+      "sourceRevision": 529851,
+      "sourceUpdatedAt": "2026-11-01T17:38:50.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Verkeers-%20en%20Attractiepark%20Duinen%20Zathe&oldid=529851",
       "license": "CC-BY-SA-4.0",
       "id": "cp-park-17198",
       "country": "Netherlands",
@@ -200970,7 +201148,10 @@
           "latest": "2002-12-31"
         }
       },
-      "aliases": []
+      "aliases": [
+        "Attractiepark Duinen Zathe",
+        "Verkeers- en Attractiepark Duinen Zathe"
+      ]
     },
     {
       "sourceId": 17278,
@@ -243841,14 +244022,14 @@
     {
       "sourceId": 82160,
       "name": "Steinwasen Park",
-      "sourceRevision": 483303,
-      "sourceUpdatedAt": "2026-10-12T15:34:31.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=Steinwasen%20Park&oldid=483303",
+      "sourceRevision": 529777,
+      "sourceUpdatedAt": "2026-11-01T16:27:30.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Steinwasen%20Park&oldid=529777",
       "license": "CC-BY-SA-4.0",
       "id": "cp-park-82160",
       "country": "Germany",
       "countryCode": "DE",
-      "place": "",
+      "place": "Oberried, Baden-Württemberg",
       "state": "",
       "coordinates": null,
       "status": "Operating",
@@ -244488,16 +244669,19 @@
     {
       "sourceId": 82799,
       "name": "Fantawild Oriental Legend",
-      "sourceRevision": 478882,
-      "sourceUpdatedAt": "2026-10-13T12:28:06.000Z",
-      "source": "https://coasterpedia.net/w/index.php?title=Fantawild%20Oriental%20Legend&oldid=478882",
+      "sourceRevision": 529847,
+      "sourceUpdatedAt": "2026-11-01T17:29:02.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Fantawild%20Oriental%20Legend&oldid=529847",
       "license": "CC-BY-SA-4.0",
       "id": "cp-park-82799",
       "country": "China",
       "countryCode": "CN",
       "place": "Yanjiang, Ziyang, Sichuan",
       "state": "",
-      "coordinates": null,
+      "coordinates": {
+        "lat": 30.192779052814,
+        "lon": 104.57509486677
+      },
       "status": "Operating",
       "dates": {
         "opened": {
@@ -249497,6 +249681,55 @@
           "edtf": "2006-07-05",
           "earliest": "2006-07-05",
           "latest": "2006-07-05"
+        }
+      },
+      "aliases": []
+    },
+    {
+      "sourceId": 92612,
+      "name": "Mountain Creek Waterpark",
+      "sourceRevision": 529610,
+      "sourceUpdatedAt": "2026-11-01T12:56:10.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Mountain%20Creek%20Waterpark&oldid=529610",
+      "license": "CC-BY-SA-4.0",
+      "id": "cp-park-92612",
+      "country": "United States",
+      "countryCode": "US",
+      "place": "Vernon",
+      "state": "New Jersey",
+      "coordinates": null,
+      "status": "Operating",
+      "dates": {
+        "opened": {
+          "edtf": "1978",
+          "earliest": "1978-01-01",
+          "latest": "1978-12-31"
+        }
+      },
+      "aliases": [
+        "Action Park",
+        "Mountain Creek Waterpark"
+      ]
+    },
+    {
+      "sourceId": 92683,
+      "name": "Aqua Marien",
+      "sourceRevision": 529820,
+      "sourceUpdatedAt": "2026-11-01T16:51:01.000Z",
+      "source": "https://coasterpedia.net/w/index.php?title=Aqua%20Marien&oldid=529820",
+      "license": "CC-BY-SA-4.0",
+      "id": "cp-park-92683",
+      "country": "Germany",
+      "countryCode": "DE",
+      "place": "Marienberg, Saxony",
+      "state": "",
+      "coordinates": null,
+      "status": "Operating",
+      "dates": {
+        "opened": {
+          "edtf": "1997",
+          "earliest": "1997-01-01",
+          "latest": "1997-12-31"
         }
       },
       "aliases": []
